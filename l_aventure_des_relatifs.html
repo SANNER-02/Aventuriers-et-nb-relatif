@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'Aventure des Relatifs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const OrcAvatar = () => (
+          <svg viewBox="0 0 100 100" className="w-32 h-32 mx-auto drop-shadow-xl animate-[bounce_3s_ease-in-out_infinite]">
+            <path d="M10,40 Q50,20 90,40 L80,50 Q50,40 20,50 Z" fill="#713f12" />
+            <path d="M30,40 C30,10 70,10 70,40 Z" fill="#854d0e" />
+            <ellipse cx="50" cy="65" rx="30" ry="25" fill="#4ade80" />
+            <circle cx="38" cy="60" r="4" fill="#064e3b" />
+            <circle cx="62" cy="60" r="4" fill="#064e3b" />
+            <path d="M35,75 L30,65 L45,75 Z" fill="#f8fafc" />
+            <path d="M65,75 L70,65 L55,75 Z" fill="#f8fafc" />
+            <path d="M40,80 Q50,85 60,80" stroke="#064e3b" strokeWidth="2" fill="transparent" />
+          </svg>
+        );
+
+        const GirlAvatar = () => (
+          <svg viewBox="0 0 100 100" className="w-32 h-32 mx-auto drop-shadow-xl animate-[bounce_3s_ease-in-out_infinite_0.5s]">
+            <path d="M20,50 C10,90 40,90 30,50 Z" fill="#451a03" />
+            <path d="M80,50 C90,90 60,90 70,50 Z" fill="#451a03" />
+            <ellipse cx="50" cy="60" rx="25" ry="25" fill="#fde047" />
+            <path d="M15,35 Q50,15 85,35 L75,45 Q50,35 25,45 Z" fill="#b45309" />
+            <path d="M32,35 C32,10 68,10 68,35 Z" fill="#d97706" />
+            <circle cx="40" cy="55" r="3" fill="#000" />
+            <circle cx="60" cy="55" r="3" fill="#000" />
+            <path d="M42,70 Q50,75 58,70" stroke="#000" strokeWidth="2" fill="transparent" />
+          </svg>
+        );
+
+        const getGameData = (hero) => [
+          // ZONE 1 : LA JUNGLE (1 - 7)
+          {
+            id: 1, zone: 1, zoneName: "La Jungle Mystique", title: "Le Camp de Base",
+            story: `Bienvenue, jeune ${hero === 'girl' ? 'exploratrice' : 'explorateur'} ! Avant de partir, vérifions la météo. Il faisait -3°C cette nuit, mais la température a augmenté de 8°C.`,
+            question: "Quelle est la température au camp de base ce matin ?",
+            type: "input", expression: "-3 + 8", correctAnswer: 5,
+            funnyFailMsg: "Brrr ! Tu as dû oublier tes moufles mathématiques. Essaie encore !", icon: "⛺"
+          },
+          {
+            id: 2, zone: 1, title: "Le Sac à Dos Magique",
+            story: "Ton sac pèse 15 kg. Tu utilises une potion d'allègement de -7 kg. Mais un singe y glisse discrètement une pierre de 4 kg.",
+            question: "Quel calcul correspond au poids final de ton sac ?",
+            type: "qcm",
+            options: [
+              { text: "15 + 7 + 4 = 26 kg", isCorrect: false, msg: "La potion d'allègement enlève du poids, elle n'en ajoute pas !" },
+              { text: "15 - (-7) + 4 = 26 kg", isCorrect: false, msg: "Attention aux signes ! Enlever -7 revient à ajouter 7..." },
+              { text: "15 + (-7) + 4 = 12 kg", isCorrect: true, msg: "" },
+              { text: "15 - 7 - 4 = 4 kg", isCorrect: false, msg: "Le singe a ajouté une pierre, il ne l'a pas enlevée." }
+            ], icon: "🎒"
+          },
+          {
+            id: 3, zone: 1, title: "La Boussole Folle",
+            story: "Pour traverser le marais, tu dois traduire ton chemin en calcul. Tu fais 10 pas vers le Nord (+10), puis la boussole s'affole et tu recules de 15 pas vers le Sud (-15), avant de refaire 3 pas vers le Nord.",
+            question: "Construis l'expression mathématique de ton parcours :",
+            type: "expression_builder", tokens: ["10", "+10", "-15", "15", "+3", "3", "+", "-", "(", ")"],
+            expectedExpressions: ["10-15+3", "+10-15+3", "10+(-15)+3", "+10+(-15)+3", "10-15+(+3)"],
+            funnyFailMsg: "Tu tournes en rond ! Utilise les bons nombres positifs et négatifs dans le bon ordre.", icon: "🧭"
+          },
+          {
+            id: 4, zone: 1, title: "Les Lianes Suspendues",
+            story: "Trois lianes pendent devant toi au-dessus d'un précipice. Seule la liane dont le résultat du calcul est exactement -4 supportera ton poids.",
+            question: "Clique sur la liane solide :",
+            type: "clickable",
+            items: [
+              { id: 1, text: "-12 + 7", isCorrect: false, failMsg: "Crack ! Cette liane valait -5. Tu tombes dans la boue !" },
+              { id: 2, text: "-8 - (-4)", isCorrect: true, failMsg: "" },
+              { id: 3, text: "-2 - 6", isCorrect: false, failMsg: "Ziouip ! Cette liane valait -8. Trop fragile !" }
+            ], icon: "🌿"
+          },
+          {
+            id: 5, zone: 1, title: "L'Arbre Géant",
+            story: "Tu grimpes sur un arbre à 20m du sol. Un serpent te fait sursauter, tu glisses et descends de 13m. Puis tu remontes prudemment de 5m.",
+            question: "À quelle hauteur es-tu maintenant ?",
+            type: "input", expression: "20 - 13 + 5", correctAnswer: 12,
+            funnyFailMsg: "Aïe, tu as rencontré une branche amnésique ! Concentre-toi et recompte !", icon: "🌳"
+          },
+          {
+            id: 6, zone: 1, title: "Le Pont Brisée",
+            story: "Le pont de bois est détruit. Pour le réparer, tu dois associer chaque planche (un calcul) avec son bon emplacement (le résultat).",
+            question: "Associe chaque calcul à son résultat en cliquant dessus :",
+            type: "matching",
+            pairs: [
+              { left: "-5 + (-3)", right: "-8" },
+              { left: "-2 - (-7)", right: "5" },
+              { left: "4 - 10", right: "-6" }
+            ], icon: "🌉"
+          },
+          {
+            id: 7, zone: 1, title: "La Clairière des Nénuphars",
+            story: "Pour traverser la mare, tu dois sauter sur les nénuphars dans l'ordre CROISSANT de leur résultat (du plus petit au plus grand).",
+            question: "Clique sur les nénuphars dans le bon ordre :",
+            type: "ordering",
+            items: [
+              { id: 'a', text: "-3 + 1", value: -2 },
+              { id: 'b', text: "-5 - 2", value: -7 },
+              { id: 'c', text: "2 - (-2)", value: 4 },
+              { id: 'd', text: "-5 - (-6)", value: 1 }
+            ], icon: "🐸"
+          },
+
+          // ZONE 2 : LES GROTTES SOMBRES (8 - 14)
+          {
+            id: 8, zone: 2, zoneName: "Les Grottes Sombres", title: "La Descente aux Chauves-Souris",
+            story: "Tu descends dans une caverne. Tu es à -4 mètres sous terre. Soudain, des chauves-souris t'obligent à descendre encore de 7 mètres pour te cacher.",
+            question: "À quelle profondeur te trouves-tu maintenant ?",
+            type: "input", expression: "-4 - 7", correctAnswer: -11,
+            funnyFailMsg: "Splat ! Tu as calculé dans le mauvais sens, tu as foncé dans le plafond de la grotte ! Redescends un peu.", icon: "🦇"
+          },
+          {
+            id: 9, zone: 2, title: "Le Chariot de la Mine",
+            story: "Tu trouves un vieux chariot. Il avance de 12 mètres, recule de 18 mètres sur une pente, puis la gravité le fait reculer encore de 5 mètres.",
+            question: "Quelle expression mathématique raconte le trajet du chariot ?",
+            type: "expression_builder", tokens: ["12", "18", "5", "-12", "-18", "-5", "+", "-", "(", ")"],
+            expectedExpressions: ["12-18-5", "12+(-18)+(-5)", "12-18+(-5)", "12+(-18)-5"],
+            funnyFailMsg: "Déraillement ! Revois tes additions et soustractions de déplacements.", icon: "🛤️"
+          },
+          {
+            id: 10, zone: 2, title: "Le Marchand Gobelin",
+            story: "Un gobelin des cavernes te propose un marché. Tu as -8 joyaux (des dettes). Il te supprime une de tes dettes d'une valeur de -5 joyaux.",
+            question: "Combien as-tu de joyaux maintenant ? (-8 - (-5))",
+            type: "input", expression: "-8 - (-5)", correctAnswer: -3,
+            funnyFailMsg: "Soustraire une dette, c'est comme gagner de l'argent ! Le gobelin se moque de toi.", icon: "👹"
+          },
+          {
+            id: 11, zone: 2, title: "Le Dilemme des Tunnels",
+            story: "Deux tunnels se présentent. La carte indique : 'Seul le tunnel dont la somme des températures est positive te gardera en vie'.",
+            question: "Quel tunnel choisis-tu ?",
+            type: "clickable",
+            items: [
+              { id: 1, text: "Tunnel Glacé : (-15°C) + (+12°C)", isCorrect: false, failMsg: "Le résultat est -3. Tu es complètement gelé !" },
+              { id: 2, text: "Tunnel Volcanique : (-8°C) + (+10°C)", isCorrect: true, failMsg: "" }
+            ], icon: "🕳️"
+          },
+          {
+            id: 12, zone: 2, title: "Les Cristaux d'Énergie",
+            story: "Tu dois équilibrer les cristaux d'énergie de la porte. L'équation de la porte est : (-6) + ... = 4.",
+            question: "Quel nombre manque pour ouvrir la porte ?",
+            type: "qcm",
+            options: [
+              { text: "-2", isCorrect: false, msg: "(-6) + (-2) donne -8, pas 4 !" },
+              { text: "10", isCorrect: true, msg: "" },
+              { text: "2", isCorrect: false, msg: "(-6) + 2 donne -4, presque mais le signe est mauvais !" },
+              { text: "-10", isCorrect: false, msg: "Tu t'éloignes du but, l'énergie baisse !" }
+            ], icon: "💎"
+          },
+          {
+            id: 13, zone: 2, title: "L'Écho des Nombres",
+            story: "Dans la grande salle, des voix résonnent. Tu dois lier les calculs qui ont EXACTEMENT le même résultat pour faire taire l'écho.",
+            question: "Associe les calculs équivalents :",
+            type: "matching",
+            pairs: [
+              { left: "-3 - 2", right: "-10 + 5" },
+              { left: "5 - (-2)", right: "10 - 3" },
+              { left: "-4 + 4", right: "-1 - (-1)" }
+            ], icon: "🔊"
+          },
+          {
+            id: 14, zone: 2, title: "Le Gardien des Formules",
+            story: "Un esprit de la roche bloque l'escalier vers la surface : 'Je descends de 5m, je descends encore de 3m, et je remonte de 10m.'",
+            question: "Construis l'expression exacte de l'esprit :",
+            type: "expression_builder", tokens: ["-5", "5", "3", "-3", "10", "-10", "+", "-", "(", ")"],
+            expectedExpressions: ["-5-3+10", "-5-(+3)+10", "-5+(-3)+10", "(-5)-3+10", "(-5)+(-3)+10"],
+            funnyFailMsg: "L'esprit grogne : 'L'ordre ou les signes ne sont pas bons ! Relis bien mon histoire.'", icon: "👻"
+          },
+
+          // ZONE 3 : LA PYRAMIDE MAYA (15 - 20)
+          {
+            id: 15, zone: 3, zoneName: "La Pyramide Maya", title: "L'Entrée Solaire",
+            story: "Tu es devant la pyramide. Une inscription dit : 'La règle sacrée : Soustraire un nombre relatif revient à...'",
+            question: "Complète la phrase pour ouvrir la porte :",
+            type: "qcm",
+            options: [
+              { text: "... soustraire son opposé.", isCorrect: false, msg: "Non, c'est l'inverse !" },
+              { text: "... ajouter le même nombre.", isCorrect: false, msg: "Presque, mais non." },
+              { text: "... ajouter son opposé.", isCorrect: true, msg: "" }
+            ], icon: "☀️"
+          },
+          {
+            id: 16, zone: 3, title: "Les Marches de la Malédiction",
+            story: "Il faut gravir l'escalier. Tu es sur la marche 0. Tu montes de 12 marches (+12), un piège te fait chuter de 20 marches (-20), puis tu utilises un grappin pour remonter de 15 marches (+15).",
+            question: "Sur quelle marche es-tu (12 - 20 + 15) ?",
+            type: "input", expression: "12 - 20 + 15", correctAnswer: 7,
+            funnyFailMsg: "Tu as dégringolé tout en bas ! Recompte tes marches.", icon: "🪜"
+          },
+          {
+            id: 17, zone: 3, title: "Le Sablier Géant",
+            story: "Le temps presse ! Tu dois cliquer sur les sabliers dans l'ordre DÉCROISSANT (du plus grand au plus petit résultat) pour arrêter le mécanisme.",
+            question: "Clique sur les sabliers du plus grand au plus petit :",
+            type: "ordering",
+            items: [
+              { id: 'a', text: "-2 - (-8)", value: 6 },
+              { id: 'b', text: "-10 + 3", value: -7 },
+              { id: 'c', text: "0 - 4", value: -4 },
+              { id: 'd', text: "5 + (-4)", value: 1 }
+            ], icon: "⏳"
+          },
+          {
+            id: 18, zone: 3, title: "L'Antichambre de Kukulcan",
+            story: "Le sol est parsemé de dalles numérotées. Il faut marcher sur la dalle qui correspond au grand calcul divin : (-7) + 12 - (-3) - 5.",
+            question: "Sur quelle dalle dois-tu sauter ?",
+            type: "clickable",
+            items: [
+              { id: 1, text: "Dalle 0", isCorrect: false, failMsg: "Clic ! Une fléchette t'érafle ! Mauvaise dalle !" },
+              { id: 2, text: "Dalle 3", isCorrect: true, failMsg: "" },
+              { id: 3, text: "Dalle -3", isCorrect: false, failMsg: "Le sol se dérobe ! Faux calcul !" },
+              { id: 4, text: "Dalle 7", isCorrect: false, failMsg: "Un serpent sort du mur ! Faux !" }
+            ], icon: "🚪"
+          },
+          {
+            id: 19, zone: 3, title: "L'Énigme du Gardien de Pierre",
+            story: "La statue géante du gardien s'anime. 'Je suis la différence entre la température du feu mystique (-15°C) et celle de la glace éternelle (-25°C).'",
+            question: "Quel est mon secret ? (-15 - (-25))",
+            type: "input", expression: "-15 - (-25)", correctAnswer: 10,
+            funnyFailMsg: "La statue lève un sourcil de pierre. 'Même un scarabée compte mieux que ça !' gronde-t-elle.", icon: "🗿"
+          },
+          {
+            id: 20, zone: 3, title: "Le Trésor de la Balance d'Or",
+            story: "La chambre du trésor ! Une grande balance en or s'y trouve. Sur un plateau : un poids de -18 et un poids de +24. Sur l'autre, tu dois mettre le poids exact pour que l'équilibre parfait (zéro) soit atteint.",
+            question: "Quel poids mystère (X) faut-il pour que (-18) + 24 + X = 0 ?",
+            type: "input", expression: "-18 + 24 + X = 0", correctAnswer: -6,
+            funnyFailMsg: "BOUM ! La salle tremble ! La balance n'est pas équilibrée, le plafond menace de s'effondrer !", icon: "🏆"
+          }
+        ];
+
+        function App() {
+          const [hero, setHero] = useState(null);
+          const [currentStage, setCurrentStage] = useState(0);
+          const [gameCompleted, setGameCompleted] = useState(false);
+          const [unlockedStages, setUnlockedStages] = useState([0]);
+          
+          const [userAnswer, setUserAnswer] = useState('');
+          const [builtExpression, setBuiltExpression] = useState([]);
+          const [matchLeft, setMatchLeft] = useState(null);
+          const [matchedPairs, setMatchedPairs] = useState([]);
+          const [orderedItems, setOrderedItems] = useState([]);
+
+          const [feedback, setFeedback] = useState({ show: false, isCorrect: false, msg: '' });
+          const [shake, setShake] = useState(false);
+
+          const GAME_DATA = hero ? getGameData(hero) : [];
+          const stage = GAME_DATA[currentStage];
+
+          const triggerShake = () => {
+            setShake(true);
+            setTimeout(() => setShake(false), 500);
+          };
+
+          const handleSuccess = () => {
+            setFeedback({ show: true, isCorrect: true, msg: "Excellent ! C'est la bonne réponse !" });
+            if (currentStage < GAME_DATA.length - 1 && !unlockedStages.includes(currentStage + 1)) {
+              setUnlockedStages([...unlockedStages, currentStage + 1]);
+            }
+          };
+
+          const handleFail = (msg) => {
+            setFeedback({ show: true, isCorrect: false, msg: msg });
+            triggerShake();
+          };
+
+          const resetStageState = () => {
+            setUserAnswer('');
+            setBuiltExpression([]);
+            setMatchLeft(null);
+            setMatchedPairs([]);
+            setOrderedItems([]);
+            setFeedback({ show: false, isCorrect: false, msg: '' });
+          };
+
+          const handleNextStage = () => {
+            if (currentStage < GAME_DATA.length - 1) {
+              setCurrentStage(currentStage + 1);
+              resetStageState();
+            } else {
+              setGameCompleted(true);
+            }
+          };
+
+          const jumpToStage = (index) => {
+            if (unlockedStages.includes(index)) {
+              setCurrentStage(index);
+              resetStageState();
+            }
+          };
+
+          const handleInputSubmit = (e) => {
+            e.preventDefault();
+            const answerInt = parseInt(userAnswer, 10);
+            if (isNaN(answerInt)) {
+              handleFail("Hé ho ! Il faut entrer un vrai nombre !");
+              return;
+            }
+            if (answerInt === stage.correctAnswer) handleSuccess();
+            else handleFail(stage.funnyFailMsg);
+          };
+
+          const handleExpressionSubmit = () => {
+            const exprStr = builtExpression.join('');
+            if (stage.expectedExpressions.includes(exprStr)) handleSuccess();
+            else handleFail(stage.funnyFailMsg);
+          };
+
+          const handleQcmClick = (option) => {
+            if (feedback.isCorrect) return; 
+            if (option.isCorrect) handleSuccess();
+            else handleFail(option.msg);
+          };
+
+          const handleClickableClick = (item) => {
+            if (feedback.isCorrect) return;
+            if (item.isCorrect) handleSuccess();
+            else handleFail(item.failMsg);
+          };
+
+          const handleMatchSelect = (type, itemIndex) => {
+            if (feedback.isCorrect) return;
+            if (type === 'left') {
+              if (!matchedPairs.some(p => p.left === itemIndex)) setMatchLeft(itemIndex);
+            } else if (type === 'right' && matchLeft !== null) {
+              if (matchedPairs.some(p => p.right === itemIndex)) return;
+              const isMatch = stage.pairs[matchLeft].right === stage.pairs[itemIndex].right; 
+              if (matchLeft === itemIndex) {
+                const newMatched = [...matchedPairs, { left: matchLeft, right: itemIndex }];
+                setMatchedPairs(newMatched);
+                setMatchLeft(null);
+                if (newMatched.length === stage.pairs.length) handleSuccess();
+              } else {
+                handleFail("Ces deux éléments ne vont pas ensemble ! Les cordes s'emmêlent.");
+                setMatchLeft(null);
+              }
+            }
+          };
+
+          const handleOrderClick = (item) => {
+            if (feedback.isCorrect || orderedItems.find(i => i.id === item.id)) return;
+            const newOrder = [...orderedItems, item];
+            setOrderedItems(newOrder);
+            const isDescending = stage.question.includes("DÉCROISSANT") || stage.question.includes("plus grand au plus petit");
+            const sortedItems = [...stage.items].sort((a, b) => isDescending ? b.value - a.value : a.value - b.value);
+            let isSequenceCorrect = true;
+            for (let i = 0; i < newOrder.length; i++) {
+              if (newOrder[i].id !== sortedItems[i].id) {
+                isSequenceCorrect = false;
+                break;
+              }
+            }
+            if (!isSequenceCorrect) {
+              handleFail("Mauvais ordre ! La séquence est brisée, tu dois recommencer.");
+              setOrderedItems([]); 
+            } else if (newOrder.length === stage.items.length) {
+              handleSuccess();
+            }
+          };
+
+          const getZoneColors = (zoneId) => {
+            switch(zoneId) {
+              case 1: return { bg: "bg-[#e8f5e9]", border: "border-green-600", text: "text-green-800", primary: "bg-green-600", light: "bg-green-100" };
+              case 2: return { bg: "bg-[#eceff1]", border: "border-gray-600", text: "text-gray-800", primary: "bg-gray-700", light: "bg-gray-200" };
+              case 3: return { bg: "bg-[#fff8e1]", border: "border-amber-500", text: "text-amber-800", primary: "bg-amber-600", light: "bg-amber-100" };
+              default: return { bg: "bg-[#f0f4f8]", border: "border-emerald-500", text: "text-emerald-800", primary: "bg-emerald-600", light: "bg-emerald-100" };
+            }
+          };
+
+          const renderMap = () => {
+            const colors = stage ? getZoneColors(stage.zone) : getZoneColors(1);
+            return (
+              <div className={`${colors.primary} rounded-xl p-4 shadow-inner mb-6 relative overflow-hidden border-4 ${colors.border}`}>
+                <h3 className="text-white font-bold text-center mb-4 text-xl font-serif tracking-widest uppercase">
+                  Carte de l'Expédition ({unlockedStages.length}/20)
+                </h3>
+                <div className="grid grid-cols-5 md:grid-cols-10 gap-2 relative z-10">
+                  {GAME_DATA.map((s, index) => {
+                    const isUnlocked = unlockedStages.includes(index);
+                    const isCurrent = index === currentStage;
+                    const isCompleted = unlockedStages.includes(index + 1) || (index === 19 && gameCompleted);
+                    
+                    let btnClass = "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-sm md:text-lg shadow-md transition-all duration-300 mx-auto ";
+                    if (isCurrent) btnClass += "bg-yellow-400 text-yellow-900 border-4 border-white animate-pulse transform scale-110 z-20";
+                    else if (isCompleted) btnClass += "bg-white text-green-600 border-2 border-green-700 cursor-pointer hover:bg-green-50";
+                    else if (isUnlocked) btnClass += "bg-blue-400 text-white border-2 border-blue-600 cursor-pointer hover:bg-blue-300";
+                    else btnClass += "bg-gray-700/50 text-gray-400 border-2 border-gray-800 cursor-not-allowed opacity-50";
+
+                    return (
+                      <button 
+                        key={s.id} className={btnClass} onClick={() => jumpToStage(index)} disabled={!isUnlocked}
+                        title={isUnlocked ? `${s.zoneName || ''} - ${s.title}` : "Zone inexplorée"}
+                      >
+                        {isCompleted && !isCurrent ? '✓' : s.id}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          };
+
+          const renderExerciseContent = () => {
+            const colors = getZoneColors(stage.zone);
+            switch (stage.type) {
+              case "input":
+                return (
+                  <form onSubmit={handleInputSubmit} className="flex flex-col md:flex-row gap-4 items-center justify-center mt-6">
+                    <input 
+                      type="number" value={userAnswer} onChange={(e) => setUserAnswer(e.target.value)}
+                      placeholder="Ta réponse..." disabled={feedback.isCorrect}
+                      className={`w-full md:w-48 px-6 py-4 rounded-xl border-2 ${colors.border} focus:outline-none focus:ring-4 focus:ring-opacity-50 text-xl text-center shadow-inner`}
+                    />
+                    {!feedback.isCorrect && (
+                      <button type="submit" className={`${colors.primary} hover:opacity-90 text-white font-bold py-4 px-8 rounded-xl shadow-md transition-transform active:scale-95`}>
+                        Vérifier
+                      </button>
+                    )}
+                  </form>
+                );
+
+              case "expression_builder":
+                return (
+                  <div className="mt-4">
+                    <div className="bg-gray-50 p-4 rounded-xl text-center shadow-inner min-h-[4rem] flex flex-wrap justify-center items-center gap-2 mb-6 border-2 border-dashed border-gray-400">
+                      {builtExpression.length === 0 && <span className="text-gray-400 text-lg">Ton expression apparaîtra ici...</span>}
+                      {builtExpression.map((token, i) => (
+                        <span key={i} className={`bg-white border-2 ${colors.border} ${colors.text} px-3 py-1 rounded-lg shadow-sm font-bold animate-[popIn_0.2s_ease-out]`}>{token}</span>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-3 mb-6">
+                      {stage.tokens.map((token, idx) => (
+                        <button 
+                          key={idx} type="button" onClick={() => setBuiltExpression([...builtExpression, token])} disabled={feedback.isCorrect}
+                          className={`${colors.light} hover:brightness-95 ${colors.text} border-2 ${colors.border} font-bold text-xl py-2 px-4 rounded-lg shadow-sm transition-transform active:scale-95 disabled:opacity-50`}
+                        >{token}</button>
+                      ))}
+                    </div>
+                    {!feedback.isCorrect && (
+                      <div className="flex gap-4 justify-center">
+                        <button type="button" onClick={() => setBuiltExpression([])} className="bg-red-100 text-red-700 font-bold py-3 px-6 rounded-xl hover:bg-red-200">Effacer</button>
+                        <button type="button" onClick={handleExpressionSubmit} className={`${colors.primary} text-white font-bold py-3 px-8 rounded-xl shadow-md hover:opacity-90`}>Valider</button>
+                      </div>
+                    )}
+                  </div>
+                );
+                
+              case "qcm":
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    {stage.options.map((opt, i) => (
+                      <button
+                        key={i} onClick={() => handleQcmClick(opt)} disabled={feedback.isCorrect}
+                        className={`p-4 rounded-xl border-2 text-lg font-bold transition-all shadow-sm
+                          ${feedback.isCorrect && opt.isCorrect ? 'bg-green-500 text-white border-green-600' : 
+                            `${colors.light} ${colors.text} ${colors.border} hover:brightness-95 hover:-translate-y-1`}
+                          disabled:opacity-80 disabled:hover:translate-y-0`}
+                      >{opt.text}</button>
+                    ))}
+                  </div>
+                );
+
+              case "clickable":
+                return (
+                  <div className="flex flex-wrap justify-center gap-6 mt-6">
+                    {stage.items.map((item, i) => (
+                      <button
+                        key={i} onClick={() => handleClickableClick(item)} disabled={feedback.isCorrect}
+                        className={`flex flex-col items-center justify-center p-6 w-40 h-40 rounded-2xl border-4 transition-all shadow-lg
+                          ${feedback.isCorrect && item.isCorrect ? 'bg-green-400 border-green-600 text-white animate-bounce' : 
+                            `bg-white ${colors.border} ${colors.text} hover:scale-105 hover:bg-gray-50`}
+                          disabled:opacity-60 disabled:hover:scale-100`}
+                      >
+                        <span className="text-4xl mb-2">{stage.icon}</span>
+                        <span className="font-bold text-center">{item.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+
+              case "matching":
+                return (
+                  <div className="flex flex-col md:flex-row gap-8 justify-center items-center mt-6">
+                    <div className="flex flex-col gap-3">
+                      <h4 className="font-bold text-center mb-2 text-gray-600">Calculs</h4>
+                      {stage.pairs.map((pair, i) => {
+                        const isMatched = matchedPairs.some(p => p.left === i);
+                        const isSelected = matchLeft === i;
+                        return (
+                          <button key={`l-${i}`} onClick={() => handleMatchSelect('left', i)} disabled={isMatched || feedback.isCorrect}
+                            className={`px-6 py-4 rounded-xl border-2 font-bold text-lg transition-all min-w-[150px] shadow-sm
+                              ${isMatched ? 'bg-green-200 border-green-500 text-green-800 opacity-50' : 
+                                isSelected ? 'bg-yellow-200 border-yellow-500 ring-2 ring-yellow-400' : 
+                                `bg-white ${colors.border} ${colors.text} hover:bg-gray-50`}`}
+                          >{pair.left}</button>
+                        );
+                      })}
+                    </div>
+                    <div className="hidden md:flex flex-col gap-2 items-center text-gray-300 text-2xl">
+                      <span>🔗</span><span>🔗</span><span>🔗</span>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <h4 className="font-bold text-center mb-2 text-gray-600">Résultats</h4>
+                      {[...stage.pairs].reverse().map((pair, reverseIdx) => {
+                        const i = stage.pairs.length - 1 - reverseIdx;
+                        const isMatched = matchedPairs.some(p => p.right === i);
+                        return (
+                          <button key={`r-${i}`} onClick={() => handleMatchSelect('right', i)} disabled={isMatched || feedback.isCorrect}
+                            className={`px-6 py-4 rounded-xl border-2 font-bold text-lg transition-all min-w-[100px] shadow-sm
+                              ${isMatched ? 'bg-green-200 border-green-500 text-green-800 opacity-50' : 
+                                `bg-white border-dashed border-gray-400 text-gray-700 hover:bg-gray-100 hover:border-solid hover:${colors.border}`}`}
+                          >{pair.right}</button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+
+              case "ordering":
+                return (
+                  <div className="mt-6 text-center">
+                    <div className="flex flex-wrap justify-center gap-4">
+                      {stage.items.map((item, i) => {
+                        const isClicked = orderedItems.find(ordered => ordered.id === item.id);
+                        const clickIndex = orderedItems.findIndex(ordered => ordered.id === item.id);
+                        return (
+                          <button
+                            key={i} onClick={() => handleOrderClick(item)} disabled={isClicked || feedback.isCorrect}
+                            className={`relative flex flex-col items-center justify-center p-4 w-32 h-32 rounded-full border-4 transition-all shadow-md
+                              ${isClicked ? 'bg-green-100 border-green-500 text-green-800 scale-95 opacity-80' : 
+                                `bg-white ${colors.border} ${colors.text} hover:scale-105 hover:bg-gray-50`}`}
+                          >
+                            {isClicked && <span className="absolute -top-2 -right-2 bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg z-10">{clickIndex + 1}</span>}
+                            <span className="text-3xl mb-1">{stage.icon}</span>
+                            <span className="font-bold text-sm">{item.text}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-6 flex justify-center items-center gap-2 h-12">
+                       {orderedItems.map((item, i) => (
+                         <React.Fragment key={`seq-${i}`}>
+                           <span className={`px-3 py-1 bg-white border-2 ${colors.border} rounded-md font-bold shadow-sm animate-[popIn_0.2s_ease-out]`}>
+                             {item.text}
+                           </span>
+                           {i < stage.items.length - 1 && <span className="text-gray-400">➔</span>}
+                         </React.Fragment>
+                       ))}
+                    </div>
+                  </div>
+                );
+              default: return null;
+            }
+          };
+
+          if (!hero) {
+            return (
+              <div className="min-h-screen bg-[url('https://www.transparenttextures.com/patterns/cartographer.png')] bg-[#d7ccc8] flex flex-col items-center justify-center p-6 font-sans">
+                <div className="max-w-4xl w-full bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-10 text-center border-8 border-amber-800 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-4 bg-amber-800"></div>
+                  <h1 className="text-4xl md:text-6xl mb-6 text-amber-900 font-extrabold font-serif drop-shadow-sm uppercase tracking-wide">
+                    L'Aventure des Relatifs
+                  </h1>
+                  <p className="text-xl text-amber-800 mb-10 font-medium max-w-2xl mx-auto leading-relaxed">
+                    20 épreuves. 3 zones mystérieuses. Un trésor maya inestimable.<br/>
+                    Es-tu prêt(e) à affronter l'addition et la soustraction des nombres relatifs ?
+                  </p>
+                  <h2 className="text-2xl mb-8 font-bold text-gray-700">Choisis ton avatar pour commencer :</h2>
+                  
+                  <div className="flex flex-col md:flex-row gap-8 justify-center">
+                    <button 
+                      onClick={() => setHero('boy')}
+                      className="flex-1 bg-green-50 hover:bg-green-100 border-4 border-green-600 p-8 rounded-2xl transition-all hover:scale-105 group shadow-lg flex flex-col items-center"
+                    >
+                      <OrcAvatar />
+                      <h2 className="text-3xl font-bold text-green-900 mt-6 group-hover:text-green-700">L'Orque Explorateur</h2>
+                      <p className="text-green-800 mt-3 font-medium">Force et logique mathématique !</p>
+                    </button>
+                    <button 
+                      onClick={() => setHero('girl')}
+                      className="flex-1 bg-amber-50 hover:bg-amber-100 border-4 border-amber-600 p-8 rounded-2xl transition-all hover:scale-105 group shadow-lg flex flex-col items-center"
+                    >
+                      <GirlAvatar />
+                      <h2 className="text-3xl font-bold text-amber-900 mt-6 group-hover:text-amber-700">La Super Exploratrice</h2>
+                      <p className="text-amber-800 mt-3 font-medium">Agilité et ruse calculatoire !</p>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (gameCompleted) {
+            return (
+              <div className="min-h-screen bg-yellow-100 flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
+                <div className="max-w-3xl bg-white rounded-3xl shadow-2xl p-10 text-center border-8 border-yellow-500 z-10 animate-[popIn_0.5s_ease-out]">
+                  <h1 className="text-5xl md:text-6xl mb-6 text-yellow-600 font-extrabold animate-bounce tracking-wider font-serif">🏆 VICTOIRE ! 🏆</h1>
+                  <p className="text-2xl text-gray-800 mb-6 leading-relaxed font-medium">
+                    Félicitations, courageux {hero === 'girl' ? 'exploratrice' : 'explorateur'} ! 
+                  </p>
+                  <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                    Tu as survécu à la jungle, traversé les grottes sombres et percé les mystères de la pyramide Maya. Les nombres relatifs n'ont plus aucun secret pour toi !
+                  </p>
+                  <div className="text-7xl mb-8 space-x-4 animate-pulse">👑🪙💎</div>
+                  
+                  <div className="bg-yellow-50 border-4 border-yellow-300 p-6 rounded-2xl mb-8">
+                    <p className="text-lg font-bold text-yellow-800 mb-4">La récompense ultime t'attend ici :</p>
+                    <a 
+                      href="https://view.genially.com/60ea99b4f8faab0dd0cfe6f1" 
+                      target="_blank" rel="noopener noreferrer"
+                      className="inline-block bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-5 px-10 rounded-full shadow-[0_10px_20px_rgba(217,119,6,0.4)] transform transition hover:scale-110 text-2xl"
+                    >
+                      Découvrir le Trésor Final 🎁
+                    </a>
+                  </div>
+
+                  <button onClick={() => {setGameCompleted(false); setCurrentStage(0); setUnlockedStages([0]); resetStageState();}} className="text-gray-500 underline hover:text-gray-800 font-medium">
+                    Rejouer l'aventure depuis le début
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          const colors = getZoneColors(stage.zone);
+
+          return (
+            <div className={`min-h-screen ${colors.bg} text-gray-800 p-4 md:p-8 font-sans flex flex-col items-center transition-colors duration-500`}>
+              <div className="w-full max-w-5xl">
+                
+                <header className="flex flex-col md:flex-row items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
+                  <div className="flex items-center gap-4">
+                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden border-2 border-gray-300 shadow-inner">
+                       {hero === 'girl' ? <GirlAvatar /> : <OrcAvatar />}
+                     </div>
+                     <div>
+                       <h1 className={`text-2xl md:text-3xl font-extrabold ${colors.text} font-serif`}>
+                         {hero === 'girl' ? "L'Exploratrice des Relatifs" : "L'Explorateur des Relatifs"}
+                       </h1>
+                       <p className="text-sm md:text-base text-gray-600 font-medium">Révision 4ème : Addition et Soustraction</p>
+                     </div>
+                  </div>
+                  <div className="mt-4 md:mt-0 text-right">
+                     <span className={`inline-block ${colors.primary} text-white px-4 py-2 rounded-full font-bold shadow-sm`}>
+                       Zone {stage.zone} : {stage.zoneName || "Zone Inconnue"}
+                     </span>
+                  </div>
+                </header>
+
+                {renderMap()}
+
+                <div className={`bg-white rounded-3xl shadow-xl overflow-hidden border-4 ${colors.border} transition-transform duration-300 ${shake ? 'animate-[wiggle_0.3s_ease-in-out_infinite]' : ''}`}>
+                  <div className={`${colors.primary} p-4 text-white flex justify-between items-center shadow-md`}>
+                     <h2 className="text-2xl font-bold flex items-center gap-3">
+                       <span className="text-4xl bg-white/20 p-2 rounded-xl backdrop-blur-sm">{stage.icon}</span> 
+                       Étape {stage.id} : {stage.title}
+                     </h2>
+                  </div>
+
+                  <div className="p-6 md:p-10">
+                    <div className={`${colors.light} border-l-4 ${colors.border} p-5 rounded-r-xl mb-8 shadow-sm`}>
+                      <p className="text-xl leading-relaxed text-gray-800 font-medium italic">"{stage.story}"</p>
+                    </div>
+
+                    <div className="mb-8">
+                      <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">{stage.question}</h3>
+                      {(stage.type === "input" && !stage.question.includes(stage.expression)) && (
+                        <div className="bg-gray-100 p-4 rounded-xl text-center shadow-inner font-mono text-3xl text-gray-700 tracking-wider">
+                          <span className={`font-bold ${colors.text}`}>{stage.expression} = ?</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {renderExerciseContent()}
+
+                    {feedback.show && (
+                      <div className={`mt-8 p-6 rounded-2xl border-2 shadow-md animate-[popIn_0.3s_ease-out] flex flex-col md:flex-row items-center justify-between gap-6 ${feedback.isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+                        <div className="flex items-center gap-6">
+                          <div className={`text-6xl ${feedback.isCorrect ? 'animate-bounce' : 'animate-pulse'}`}>
+                            {feedback.isCorrect ? '🌟' : '🙈'}
+                          </div>
+                          <div>
+                            <h4 className={`text-2xl font-extrabold mb-1 ${feedback.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                              {feedback.isCorrect ? 'Superbe !' : 'Zut...'}
+                            </h4>
+                            <p className={`text-xl font-medium ${feedback.isCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                              {feedback.msg}
+                            </p>
+                          </div>
+                        </div>
+                        {feedback.isCorrect && (
+                          <button 
+                            onClick={handleNextStage}
+                            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 text-xl whitespace-nowrap"
+                          >
+                            {currentStage === GAME_DATA.length - 1 ? 'Ouvrir le trésor !' : 'Étape suivante ➔'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+              <style dangerouslySetInnerHTML={{__html: `
+                @keyframes wiggle {
+                  0%, 100% { transform: rotate(-1deg) translateX(0); }
+                  25% { transform: rotate(1deg) translateX(5px); }
+                  75% { transform: rotate(-1deg) translateX(-5px); }
+                }
+                @keyframes popIn {
+                  0% { opacity: 0; transform: scale(0.9) translateY(10px); }
+                  100% { opacity: 1; transform: scale(1) translateY(0); }
+                }
+              `}} />
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
