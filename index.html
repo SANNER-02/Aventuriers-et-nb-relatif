@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L'Aventure des Relatifs — version autonome</title>
+  <style>
+    :root {
+      --bg: #eef4ef;
+      --panel: rgba(255,255,255,0.92);
+      --text: #173425;
+      --muted: #55656a;
+      --primary: #1f8a57;
+      --primary-2: #126c43;
+      --accent: #ffd166;
+      --danger: #c93d3d;
+      --success: #1f9d58;
+      --border: rgba(17,24,39,0.12);
+      --shadow: 0 18px 50px rgba(17,24,39,0.12);
+      --shadow-soft: 0 8px 24px rgba(17,24,39,0.10);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --font-title: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+      --font-body: "Segoe UI", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--text);
+      background: radial-gradient(circle at top left, rgba(255,255,255,0.55), transparent 32%), linear-gradient(180deg, #eef5f2 0%, #e7f0ec 100%);
+      overflow-x: hidden;
+    }
+
+    .screen {
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.5s ease;
+    }
+
+    .aurora, .aurora::before, .aurora::after {
+      position: absolute;
+      inset: auto;
+      content: "";
+      border-radius: 999px;
+      filter: blur(40px);
+      opacity: 0.32;
+      pointer-events: none;
+    }
+
+    .aurora.one { width: 320px; height: 320px; left: -90px; top: 60px; background: #b8f2d2; animation: floatBlob 11s ease-in-out infinite; }
+    .aurora.two { width: 280px; height: 280px; right: -60px; top: 220px; background: #ffe8a3; animation: floatBlob 14s ease-in-out infinite reverse; }
+    .aurora.three { width: 380px; height: 380px; right: 18%; bottom: -180px; background: #c8d8ff; animation: floatBlob 16s ease-in-out infinite; }
+
+    @keyframes floatBlob {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50% { transform: translate(20px,-24px) scale(1.08); }
+    }
+    @keyframes rise {
+      0%,100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes pulseGlow {
+      0%,100% { transform: scale(1); opacity: 0.55; }
+      50% { transform: scale(1.18); opacity: 1; }
+    }
+    @keyframes sway {
+      0%,100% { transform: rotate(-2deg); }
+      50% { transform: rotate(2deg); }
+    }
+    @keyframes wiggle {
+      0%,100% { transform: rotate(-1deg) translateX(0); }
+      25% { transform: rotate(1deg) translateX(5px); }
+      75% { transform: rotate(-1deg) translateX(-5px); }
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(14px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes twinkle {
+      0%,100% { opacity: 0.3; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .shell {
+      width: min(1200px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 36px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-board, .panel, .stage-card, .map-card, .feedback-card, .choice-card, .welcome-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius-xl);
+      backdrop-filter: blur(10px);
+    }
+
+    .welcome-wrap {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+    }
+
+    .welcome-card {
+      width: min(1150px, 100%);
+      overflow: hidden;
+      position: relative;
+      padding: 38px;
+      animation: popIn 0.55s ease;
+    }
+
+    .title {
+      font-family: var(--font-title);
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 1;
+      margin: 0;
+      letter-spacing: 0.03em;
+      color: #6c4a03;
+      text-transform: uppercase;
+      text-shadow: 0 2px 0 rgba(255,255,255,0.5);
+    }
+
+    .subtitle {
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      color: #6f5a2d;
+      max-width: 760px;
+      margin: 16px auto 0;
+      line-height: 1.65;
+    }
+
+    .badge-row, .mini-badges {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 18px;
+    }
+
+    .badge, .mini-badge {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.72);
+      color: #6d5322;
+      border: 1px solid rgba(109,83,34,0.12);
+      font-weight: 700;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .avatars {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+      margin-top: 34px;
+    }
+
+    .choice-card {
+      padding: 24px;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .choice-card:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 24px 54px rgba(17,24,39,0.18); }
+    .choice-card.orc { background: linear-gradient(180deg, #effbf4 0%, #daf5e5 100%); }
+    .choice-card.girl { background: linear-gradient(180deg, #fff6df 0%, #ffefc2 100%); }
+
+    .choice-title {
+      margin: 14px 0 4px;
+      font-size: 1.7rem;
+      font-family: var(--font-title);
+    }
+    .choice-desc {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .avatar-large, .avatar-mini { display: block; margin: 0 auto; }
+    .avatar-large { width: 124px; height: 124px; animation: rise 3.2s ease-in-out infinite; }
+    .avatar-mini { width: 62px; height: 62px; }
+
+    .topbar {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding: 16px 20px;
+    }
+
+    .topbar-left { display: flex; gap: 14px; align-items: center; }
+    .topbar h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 2vw, 2.1rem);
+      font-family: var(--font-title);
+    }
+    .topbar p { margin: 4px 0 0; color: var(--muted); font-weight: 600; }
+    .topbar-right { display: flex; flex-wrap: wrap; gap: 10px; justify-content: end; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      color: white;
+      box-shadow: var(--shadow-soft);
+    }
+    .pill.secondary {
+      background: rgba(255,255,255,0.74);
+      color: var(--text);
+      border: 1px solid rgba(17,24,39,0.08);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      border-radius: 16px;
+      padding: 13px 18px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+      box-shadow: var(--shadow-soft);
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-2px); }
+    .btn:active:not(:disabled) { transform: translateY(0px) scale(0.98); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-2); }
+    .btn-secondary { background: rgba(255,255,255,0.9); color: var(--text); border: 1px solid rgba(17,24,39,0.08); }
+    .btn-danger { background: #fff0f0; color: var(--danger); border: 1px solid rgba(201,61,61,0.16); }
+    .btn-accent { background: linear-gradient(180deg, #ffe89b 0%, #ffd469 100%); color: #5e4202; }
+
+    .map-card {
+      padding: 16px 18px 18px;
+      margin-bottom: 18px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .map-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .map-title { margin: 0; font-family: var(--font-title); font-size: 1.2rem; }
+    .map-sub { color: var(--muted); font-weight: 700; font-size: 0.95rem; }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(17,24,39,0.08);
+      overflow: hidden;
+      margin-top: 8px;
+      margin-bottom: 18px;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transition: width 0.35s ease;
+    }
+
+    .map-grid {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .map-node {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 3px solid rgba(17,24,39,0.1);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 1rem;
+      background: rgba(255,255,255,0.72);
+      color: var(--muted);
+      box-shadow: var(--shadow-soft);
+      transition: transform 0.18s ease, background 0.18s ease;
+      cursor: pointer;
+    }
+    .map-node:hover:not(.locked) { transform: translateY(-2px); }
+    .map-node.locked { opacity: 0.38; cursor: not-allowed; }
+    .map-node.current { background: #ffd86b; color: #6c4b00; transform: scale(1.1); }
+    .map-node.done { background: #d9f8e4; color: #17673f; }
+    .map-node.unlocked { background: #d7ecff; color: #134d86; }
+
+    .stage-card { overflow: hidden; }
+    .stage-header {
+      color: white;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .stage-title-group { display: flex; align-items: center; gap: 14px; }
+    .stage-icon-bubble {
+      width: 62px;
+      height: 62px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 2rem;
+      background: rgba(255,255,255,0.18);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+    }
+    .stage-header h2 {
+      margin: 0;
+      font-size: clamp(1.35rem, 2.4vw, 2rem);
+      font-family: var(--font-title);
+    }
+    .stage-meta { font-weight: 700; opacity: 0.95; }
+
+    .stage-inner { padding: 22px; }
+    .story-card {
+      border-left: 6px solid var(--primary);
+      padding: 18px 18px 18px 22px;
+      border-radius: 0 20px 20px 0;
+      background: rgba(255,255,255,0.72);
+      margin-bottom: 18px;
+      box-shadow: var(--shadow-soft);
+    }
+    .story-card p { margin: 0; line-height: 1.7; font-size: 1.1rem; font-style: italic; }
+
+    .scene-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.66);
+      border: 1px solid rgba(255,255,255,0.64);
+      box-shadow: var(--shadow-soft);
+      margin-bottom: 18px;
+    }
+    .scene-frame { position: relative; height: 225px; }
+    .scene-frame svg { display: block; width: 100%; height: 100%; }
+    .scene-label {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.84);
+      font-weight: 800;
+      box-shadow: var(--shadow-soft);
+    }
+    .scene-stage-tag {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 14px 16px;
+      border-radius: 20px;
+      color: white;
+      background: rgba(0,0,0,0.42);
+      box-shadow: var(--shadow-soft);
+    }
+    .scene-stage-tag .emoji { font-size: 2rem; }
+    .scene-stage-tag .small { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.72; }
+    .scene-stage-tag .name { font-weight: 800; }
+
+    .question-box {
+      text-align: center;
+      padding: 10px 0 2px;
+      margin-bottom: 12px;
+    }
+    .question-box h3 {
+      margin: 0;
+      font-size: clamp(1.25rem, 2.2vw, 1.85rem);
+      line-height: 1.35;
+    }
+    .expression-display {
+      margin: 14px auto 0;
+      max-width: 680px;
+      background: rgba(17,24,39,0.05);
+      border: 1px dashed rgba(17,24,39,0.16);
+      border-radius: 18px;
+      padding: 16px 18px;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: clamp(1.1rem, 2.8vw, 1.8rem);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .input-form {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .answer-input {
+      width: min(100%, 280px);
+      padding: 16px 18px;
+      font-size: 1.2rem;
+      border-radius: 16px;
+      border: 2px solid rgba(17,24,39,0.12);
+      text-align: center;
+      box-shadow: inset 0 1px 8px rgba(17,24,39,0.05);
+      background: white;
+    }
+    .answer-input:focus { outline: 3px solid rgba(255,209,102,0.4); border-color: var(--primary); }
+
+    .token-board {
+      min-height: 80px;
+      border-radius: 20px;
+      border: 2px dashed rgba(17,24,39,0.16);
+      background: rgba(255,255,255,0.74);
+      padding: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      box-shadow: inset 0 1px 10px rgba(17,24,39,0.05);
+    }
+    .token-placeholder { color: #85929a; font-weight: 700; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-weight: 900;
+      background: white;
+      border: 2px solid rgba(17,24,39,0.12);
+      box-shadow: var(--shadow-soft);
+      animation: popIn 0.2s ease;
+    }
+    .token-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .option-btn, .click-card, .match-btn, .order-btn {
+      border: none;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    }
+    .option-btn:hover:not(:disabled), .click-card:hover:not(:disabled), .match-btn:hover:not(:disabled), .order-btn:hover:not(:disabled) { transform: translateY(-2px); }
+
+    .option-btn {
+      border-radius: 18px;
+      padding: 16px;
+      text-align: left;
+      background: rgba(255,255,255,0.82);
+      border: 2px solid rgba(17,24,39,0.10);
+      box-shadow: var(--shadow-soft);
+      font-size: 1.05rem;
+      font-weight: 800;
+      min-height: 88px;
+      color: var(--text);
+    }
+    .option-btn.correct-highlight { background: #d9f8e4; border-color: #2bb86e; color: #10693b; }
+
+    .click-grid {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .click-card {
+      width: 170px;
+      min-height: 170px;
+      border-radius: 26px;
+      background: rgba(255,255,255,0.86);
+      border: 3px solid rgba(17,24,39,0.10);
+      box-shadow: var(--shadow-soft);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .click-card .emoji { font-size: 2.4rem; }
+    .click-card.correct-highlight { background: #d9f8e4; border-color: #2bb86e; color: #10693b; }
+
+    .matching-wrap {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 18px;
+      margin-top: 18px;
+      align-items: start;
+    }
+    .match-column h4 {
+      margin: 0 0 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .match-list { display: flex; flex-direction: column; gap: 10px; }
+    .match-connector {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      justify-content: center;
+      align-items: center;
+      color: rgba(17,24,39,0.18);
+      font-size: 1.45rem;
+      padding-top: 54px;
+    }
+    .match-btn {
+      width: 100%;
+      padding: 15px 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.88);
+      border: 2px solid rgba(17,24,39,0.10);
+      box-shadow: var(--shadow-soft);
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--text);
+    }
+    .match-btn.selected { background: #fff4bf; border-color: #f0bf37; }
+    .match-btn.matched { background: #d9f8e4; border-color: #2bb86e; color: #10693b; opacity: 0.78; }
+
+    .order-grid {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .order-btn {
+      width: 132px;
+      height: 132px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.9);
+      border: 4px solid rgba(17,24,39,0.10);
+      box-shadow: var(--shadow-soft);
+      padding: 16px 10px;
+      position: relative;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .order-btn .emoji { font-size: 1.9rem; }
+    .order-btn.clicked { background: #e8f6ff; border-color: #4da7ec; }
+    .order-index {
+      position: absolute;
+      top: -8px;
+      right: -2px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #3083d7;
+      color: white;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      box-shadow: var(--shadow-soft);
+    }
+    .sequence-line {
+      margin-top: 16px;
+      min-height: 54px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+    }
+
+    .feedback-card {
+      margin-top: 18px;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      animation: popIn 0.28s ease;
+    }
+    .feedback-card.success { border: 2px solid rgba(31,157,88,0.28); background: rgba(232,252,240,0.96); }
+    .feedback-card.fail { border: 2px solid rgba(201,61,61,0.24); background: rgba(255,240,240,0.96); }
+    .feedback-main { display: flex; gap: 16px; align-items: center; }
+    .feedback-emoji { font-size: 3rem; }
+    .feedback-title { margin: 0 0 4px; font-size: 1.45rem; font-family: var(--font-title); }
+    .feedback-card p { margin: 0; line-height: 1.5; font-weight: 700; }
+
+    .victory {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .victory-card {
+      width: min(980px, 100%);
+      text-align: center;
+      padding: 36px;
+      border-radius: 34px;
+      background: rgba(255,255,255,0.94);
+      box-shadow: 0 24px 70px rgba(17,24,39,0.16);
+      border: 1px solid rgba(17,24,39,0.08);
+      animation: popIn 0.5s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .victory-crown {
+      font-size: clamp(4rem, 11vw, 6.5rem);
+      animation: rise 3s ease-in-out infinite;
+      margin-bottom: 8px;
+    }
+    .victory-card h2 {
+      margin: 0;
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      font-family: var(--font-title);
+      color: #8f6a00;
+    }
+    .victory-card p {
+      max-width: 760px;
+      margin: 16px auto 0;
+      line-height: 1.75;
+      font-size: 1.1rem;
+      color: #554f3e;
+    }
+    .treasure-row {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin: 22px 0;
+      font-size: 2.2rem;
+    }
+    .certificate {
+      margin: 22px auto 0;
+      max-width: 760px;
+      border-radius: 28px;
+      padding: 24px;
+      background: linear-gradient(180deg, #fff8de 0%, #fff1bf 100%);
+      border: 2px solid rgba(143,106,0,0.18);
+      box-shadow: var(--shadow-soft);
+    }
+    .certificate h3 {
+      margin: 0;
+      font-family: var(--font-title);
+      color: #745205;
+      font-size: 1.75rem;
+    }
+    .certificate p { margin-top: 10px; }
+
+    .floating-symbols { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .floating-symbols span {
+      position: absolute;
+      font-size: clamp(1.7rem, 3vw, 2.5rem);
+      opacity: 0.18;
+      animation: rise 4.2s ease-in-out infinite;
+      user-select: none;
+    }
+    .ambient-one { left: 8%; top: 14%; }
+    .ambient-two { left: 26%; top: 46%; animation-delay: 0.7s; }
+    .ambient-three { left: 74%; top: 18%; animation-delay: 1.1s; }
+    .ambient-four { left: 86%; top: 58%; animation-delay: 1.6s; }
+
+    .shake { animation: wiggle 0.32s linear 2; }
+
+    .scene-sway { animation: sway 3.5s ease-in-out infinite; transform-origin: center; }
+    .scene-glow { animation: pulseGlow 2.8s ease-in-out infinite; }
+    .scene-rise { animation: rise 4.2s ease-in-out infinite; }
+    .scene-twinkle { animation: twinkle 2.2s ease-in-out infinite; }
+
+    @media (max-width: 960px) {
+      .avatars { grid-template-columns: 1fr; }
+      .matching-wrap { grid-template-columns: 1fr; }
+      .match-connector { flex-direction: row; padding-top: 0; }
+      .option-grid { grid-template-columns: 1fr; }
+      .topbar { flex-direction: column; align-items: stretch; }
+      .topbar-right { justify-content: flex-start; }
+      .map-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .stage-header { flex-direction: column; align-items: flex-start; }
+    }
+
+    @media (max-width: 640px) {
+      .welcome-card, .stage-inner { padding: 18px; }
+      .stage-header { padding: 16px; }
+      .scene-frame { height: 190px; }
+      .click-card { width: 140px; min-height: 150px; }
+      .order-btn { width: 116px; height: 116px; }
+      .feedback-card { flex-direction: column; align-items: stretch; }
+      .feedback-main { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'aventure_relatifs_autonome_v2';
+
+      function orcAvatar(sizeClass) {
+        return `
+          <svg viewBox="0 0 100 100" class="${sizeClass || ''} avatar-svg" aria-hidden="true">
+            <path d="M10,40 Q50,20 90,40 L80,50 Q50,40 20,50 Z" fill="#713f12"></path>
+            <path d="M30,40 C30,10 70,10 70,40 Z" fill="#854d0e"></path>
+            <ellipse cx="50" cy="65" rx="30" ry="25" fill="#4ade80"></ellipse>
+            <circle cx="38" cy="60" r="4" fill="#064e3b"></circle>
+            <circle cx="62" cy="60" r="4" fill="#064e3b"></circle>
+            <path d="M35,75 L30,65 L45,75 Z" fill="#f8fafc"></path>
+            <path d="M65,75 L70,65 L55,75 Z" fill="#f8fafc"></path>
+            <path d="M40,80 Q50,85 60,80" stroke="#064e3b" stroke-width="2" fill="transparent"></path>
+          </svg>`;
+      }
+
+      function girlAvatar(sizeClass) {
+        return `
+          <svg viewBox="0 0 100 100" class="${sizeClass || ''} avatar-svg" aria-hidden="true">
+            <path d="M20,50 C10,90 40,90 30,50 Z" fill="#451a03"></path>
+            <path d="M80,50 C90,90 60,90 70,50 Z" fill="#451a03"></path>
+            <ellipse cx="50" cy="60" rx="25" ry="25" fill="#fde047"></ellipse>
+            <path d="M15,35 Q50,15 85,35 L75,45 Q50,35 25,45 Z" fill="#b45309"></path>
+            <path d="M32,35 C32,10 68,10 68,35 Z" fill="#d97706"></path>
+            <circle cx="40" cy="55" r="3" fill="#000"></circle>
+            <circle cx="60" cy="55" r="3" fill="#000"></circle>
+            <path d="M42,70 Q50,75 58,70" stroke="#000" stroke-width="2" fill="transparent"></path>
+          </svg>`;
+      }
+
+      function getGameData(hero) {
+        return [
+          {
+            id: 1, zone: 1, zoneName: 'La Jungle Mystique', title: 'Le Camp de Base',
+            story: `Bienvenue, jeune ${hero === 'girl' ? 'exploratrice' : 'explorateur'} ! Avant de partir, vérifions la météo. Il faisait -3°C cette nuit, mais la température a augmenté de 8°C.`,
+            question: 'Quelle est la température au camp de base ce matin ?',
+            type: 'input', expression: '-3 + 8', correctAnswer: 5,
+            funnyFailMsg: 'Brrr ! Tu as dû oublier tes moufles mathématiques. Essaie encore !', icon: '⛺'
+          },
+          {
+            id: 2, zone: 1, title: 'Le Sac à Dos Magique',
+            story: "Ton sac pèse 15 kg. Tu utilises une potion d'allègement de -7 kg. Mais un singe y glisse discrètement une pierre de 4 kg.",
+            question: 'Quel calcul correspond au poids final de ton sac ?',
+            type: 'qcm',
+            options: [
+              { text: '15 + 7 + 4 = 26 kg', isCorrect: false, msg: "La potion d'allègement enlève du poids, elle n'en ajoute pas !" },
+              { text: '15 - (-7) + 4 = 26 kg', isCorrect: false, msg: 'Attention aux signes ! Enlever -7 revient à ajouter 7...' },
+              { text: '15 + (-7) + 4 = 12 kg', isCorrect: true, msg: '' },
+              { text: '15 - 7 - 4 = 4 kg', isCorrect: false, msg: "Le singe a ajouté une pierre, il ne l'a pas enlevée." }
+            ], icon: '🎒'
+          },
+          {
+            id: 3, zone: 1, title: 'La Boussole Folle',
+            story: 'Pour traverser le marais, tu dois traduire ton chemin en calcul. Tu fais 10 pas vers le Nord (+10), puis la boussole s\'affole et tu recules de 15 pas vers le Sud (-15), avant de refaire 3 pas vers le Nord.',
+            question: 'Construis l\'expression mathématique de ton parcours :',
+            type: 'expression_builder', tokens: ['10', '+10', '-15', '15', '+3', '3', '+', '-', '(', ')'],
+            expectedExpressions: ['10-15+3', '+10-15+3', '10+(-15)+3', '+10+(-15)+3', '10-15+(+3)'],
+            funnyFailMsg: 'Tu tournes en rond ! Utilise les bons nombres positifs et négatifs dans le bon ordre.', icon: '🧭'
+          },
+          {
+            id: 4, zone: 1, title: 'Les Lianes Suspendues',
+            story: 'Trois lianes pendent devant toi au-dessus d\'un précipice. Seule la liane dont le résultat du calcul est exactement -4 supportera ton poids.',
+            question: 'Clique sur la liane solide :',
+            type: 'clickable',
+            items: [
+              { id: 1, text: '-12 + 7', isCorrect: false, failMsg: 'Crack ! Cette liane valait -5. Tu tombes dans la boue !' },
+              { id: 2, text: '-8 - (-4)', isCorrect: true, failMsg: '' },
+              { id: 3, text: '-2 - 6', isCorrect: false, failMsg: 'Ziouip ! Cette liane valait -8. Trop fragile !' }
+            ], icon: '🌿'
+          },
+          {
+            id: 5, zone: 1, title: "L'Arbre Géant",
+            story: 'Tu grimpes sur un arbre à 20m du sol. Un serpent te fait sursauter, tu glisses et descends de 13m. Puis tu remontes prudemment de 5m.',
+            question: 'À quelle hauteur es-tu maintenant ?',
+            type: 'input', expression: '20 - 13 + 5', correctAnswer: 12,
+            funnyFailMsg: 'Aïe, tu as rencontré une branche amnésique ! Concentre-toi et recompte !', icon: '🌳'
+          },
+          {
+            id: 6, zone: 1, title: 'Le Pont Brisé',
+            story: 'Le pont de bois est détruit. Pour le réparer, tu dois associer chaque planche (un calcul) avec son bon emplacement (le résultat).',
+            question: 'Associe chaque calcul à son résultat en cliquant dessus :',
+            type: 'matching',
+            pairs: [
+              { left: '-5 + (-3)', right: '-8' },
+              { left: '-2 - (-7)', right: '5' },
+              { left: '4 - 10', right: '-6' }
+            ], icon: '🌉'
+          },
+          {
+            id: 7, zone: 1, title: 'La Clairière des Nénuphars',
+            story: 'Pour traverser la mare, tu dois sauter sur les nénuphars dans l\'ordre CROISSANT de leur résultat (du plus petit au plus grand).',
+            question: 'Clique sur les nénuphars dans l’ordre croissant : du plus petit résultat au plus grand.',
+            type: 'ordering', sortDirection: 'asc',
+            items: [
+              { id: 'a', text: '-3 + 1', value: -2 },
+              { id: 'b', text: '-5 - 2', value: -7 },
+              { id: 'c', text: '2 - (-2)', value: 4 },
+              { id: 'd', text: '-5 - (-6)', value: 1 }
+            ], icon: '🐸'
+          },
+          {
+            id: 8, zone: 2, zoneName: 'Les Grottes Sombres', title: 'La Descente aux Chauves-Souris',
+            story: 'Tu descends dans une caverne. Tu es à -4 mètres sous terre. Soudain, des chauves-souris t\'obligent à descendre encore de 7 mètres pour te cacher.',
+            question: 'À quelle profondeur te trouves-tu maintenant ?',
+            type: 'input', expression: '-4 - 7', correctAnswer: -11,
+            funnyFailMsg: 'Splat ! Tu as calculé dans le mauvais sens, tu as foncé dans le plafond de la grotte ! Redescends un peu.', icon: '🦇'
+          },
+          {
+            id: 9, zone: 2, title: 'Le Chariot de la Mine',
+            story: 'Tu trouves un vieux chariot. Il avance de 12 mètres, recule de 18 mètres sur une pente, puis la gravité le fait reculer encore de 5 mètres.',
+            question: 'Quelle expression mathématique raconte le trajet du chariot ?',
+            type: 'expression_builder', tokens: ['12', '18', '5', '-12', '-18', '-5', '+', '-', '(', ')'],
+            expectedExpressions: ['12-18-5', '12+(-18)+(-5)', '12-18+(-5)', '12+(-18)-5'],
+            funnyFailMsg: 'Déraillement ! Revois tes additions et soustractions de déplacements.', icon: '🛤️'
+          },
+          {
+            id: 10, zone: 2, title: 'Le Marchand Gobelin',
+            story: 'Un gobelin des cavernes te propose un marché. Tu as -8 joyaux (des dettes). Il te supprime une de tes dettes d\'une valeur de -5 joyaux.',
+            question: 'Combien as-tu de joyaux maintenant ? (-8 - (-5))',
+            type: 'input', expression: '-8 - (-5)', correctAnswer: -3,
+            funnyFailMsg: 'Soustraire une dette, c\'est comme gagner de l\'argent ! Le gobelin se moque de toi.', icon: '👹'
+          },
+          {
+            id: 11, zone: 2, title: 'Le Dilemme des Tunnels',
+            story: 'Deux tunnels se présentent. La carte indique : “Seul le tunnel dont la somme des températures est positive te gardera en vie”.',
+            question: 'Quel tunnel choisis-tu ?',
+            type: 'clickable',
+            items: [
+              { id: 1, text: 'Tunnel Glacé : (-15°C) + (+12°C)', isCorrect: false, failMsg: 'Le résultat est -3. Tu es complètement gelé !' },
+              { id: 2, text: 'Tunnel Volcanique : (-8°C) + (+10°C)', isCorrect: true, failMsg: '' }
+            ], icon: '🕳️'
+          },
+          {
+            id: 12, zone: 2, title: 'Les Cristaux d\'Énergie',
+            story: 'Tu dois équilibrer les cristaux d\'énergie de la porte. L\'équation de la porte est : (-6) + ... = 4.',
+            question: 'Quel nombre manque pour ouvrir la porte ?',
+            type: 'qcm',
+            options: [
+              { text: '-2', isCorrect: false, msg: '(-6) + (-2) donne -8, pas 4 !' },
+              { text: '10', isCorrect: true, msg: '' },
+              { text: '2', isCorrect: false, msg: '(-6) + 2 donne -4, presque mais le signe est mauvais !' },
+              { text: '-10', isCorrect: false, msg: 'Tu t\'éloignes du but, l\'énergie baisse !' }
+            ], icon: '💎'
+          },
+          {
+            id: 13, zone: 2, title: "L'Écho des Nombres",
+            story: 'Dans la grande salle, des voix résonnent. Tu dois lier les calculs qui ont EXACTEMENT le même résultat pour faire taire l\'écho.',
+            question: 'Associe les calculs équivalents :',
+            type: 'matching',
+            pairs: [
+              { left: '-3 - 2', right: '-10 + 5' },
+              { left: '5 - (-2)', right: '10 - 3' },
+              { left: '-4 + 4', right: '-1 - (-1)' }
+            ], icon: '🔊'
+          },
+          {
+            id: 14, zone: 2, title: 'Le Gardien des Formules',
+            story: 'Un esprit de la roche bloque l\'escalier vers la surface : “Je descends de 5m, je descends encore de 3m, et je remonte de 10m.”',
+            question: 'Construis l\'expression exacte de l\'esprit :',
+            type: 'expression_builder', tokens: ['-5', '5', '3', '-3', '10', '-10', '+', '-', '(', ')'],
+            expectedExpressions: ['-5-3+10', '-5-(+3)+10', '-5+(-3)+10', '(-5)-3+10', '(-5)+(-3)+10'],
+            funnyFailMsg: 'L\'esprit grogne : “L\'ordre ou les signes ne sont pas bons ! Relis bien mon histoire.”', icon: '👻'
+          },
+          {
+            id: 15, zone: 3, zoneName: 'La Pyramide Maya', title: 'L\'Entrée Solaire',
+            story: 'Tu es devant la pyramide. Une inscription dit : “La règle sacrée : Soustraire un nombre relatif revient à...”',
+            question: 'Complète la phrase pour ouvrir la porte :',
+            type: 'qcm',
+            options: [
+              { text: '... soustraire son opposé.', isCorrect: false, msg: 'Non, c\'est l\'inverse !' },
+              { text: '... ajouter le même nombre.', isCorrect: false, msg: 'Presque, mais non.' },
+              { text: '... ajouter son opposé.', isCorrect: true, msg: '' }
+            ], icon: '☀️'
+          },
+          {
+            id: 16, zone: 3, title: 'Les Marches de la Malédiction',
+            story: 'Il faut gravir l\'escalier. Tu es sur la marche 0. Tu montes de 12 marches (+12), un piège te fait chuter de 20 marches (-20), puis tu utilises un grappin pour remonter de 15 marches (+15).',
+            question: 'Sur quelle marche es-tu (12 - 20 + 15) ?',
+            type: 'input', expression: '12 - 20 + 15', correctAnswer: 7,
+            funnyFailMsg: 'Tu as dégringolé tout en bas ! Recompte tes marches.', icon: '🪜'
+          },
+          {
+            id: 17, zone: 3, title: 'Le Sablier Géant',
+            story: 'Le temps presse ! Tu dois cliquer sur les sabliers dans l\'ordre DÉCROISSANT (du plus grand au plus petit résultat) pour arrêter le mécanisme.',
+            question: 'Clique sur les sabliers du plus grand au plus petit :',
+            type: 'ordering', sortDirection: 'desc',
+            items: [
+              { id: 'a', text: '-2 - (-8)', value: 6 },
+              { id: 'b', text: '-10 + 3', value: -7 },
+              { id: 'c', text: '0 - 4', value: -4 },
+              { id: 'd', text: '5 + (-4)', value: 1 }
+            ], icon: '⏳'
+          },
+          {
+            id: 18, zone: 3, title: 'L\'Antichambre de Kukulcan',
+            story: 'Le sol est parsemé de dalles numérotées. Il faut marcher sur la dalle qui correspond au grand calcul divin : (-7) + 12 - (-3) - 5.',
+            question: 'Sur quelle dalle dois-tu sauter ?',
+            type: 'clickable',
+            items: [
+              { id: 1, text: 'Dalle 0', isCorrect: false, failMsg: 'Clic ! Une fléchette t\'érafle ! Mauvaise dalle !' },
+              { id: 2, text: 'Dalle 3', isCorrect: true, failMsg: '' },
+              { id: 3, text: 'Dalle -3', isCorrect: false, failMsg: 'Le sol se dérobe ! Faux calcul !' },
+              { id: 4, text: 'Dalle 7', isCorrect: false, failMsg: 'Un serpent sort du mur ! Faux !' }
+            ], icon: '🚪'
+          },
+          {
+            id: 19, zone: 3, title: "L'Énigme du Gardien de Pierre",
+            story: "La statue géante du gardien s'anime. 'Je suis la différence entre la température du feu mystique (-15°C) et celle de la glace éternelle (-25°C).'",
+            question: 'Quel est mon secret ? (-15 - (-25))',
+            type: 'input', expression: '-15 - (-25)', correctAnswer: 10,
+            funnyFailMsg: "La statue lève un sourcil de pierre. 'Même un scarabée compte mieux que ça !' gronde-t-elle.", icon: '🗿'
+          },
+          {
+            id: 20, zone: 3, title: 'Le Trésor de la Balance d\'Or',
+            story: 'La chambre du trésor ! Une grande balance en or s\'y trouve. Sur un plateau : un poids de -18 et un poids de +24. Sur l\'autre, tu dois mettre le poids exact pour que l\'équilibre parfait (zéro) soit atteint.',
+            question: 'Quel poids mystère (X) faut-il pour que -18 + 24 + X = 0 ; X=?',
+            type: 'input', expression: '-18 + 24 + X = 0 ; X=?', correctAnswer: -6,
+            funnyFailMsg: "BOUM ! La salle tremble ! La balance n'est pas équilibrée, le plafond menace de s'effondrer !", icon: '🏆'
+          }
+        ];
+      }
+
+      const STATE = {
+        hero: null,
+        currentStage: 0,
+        unlockedStages: [0],
+        gameCompleted: false,
+        userAnswer: '',
+        builtExpression: [],
+        matchLeft: null,
+        matchedPairs: [],
+        orderedItems: [],
+        feedback: { show: false, isCorrect: false, msg: '' },
+        shakeStage: false
+      };
+
+      function resetInteractionState() {
+        STATE.userAnswer = '';
+        STATE.builtExpression = [];
+        STATE.matchLeft = null;
+        STATE.matchedPairs = [];
+        STATE.orderedItems = [];
+        STATE.feedback = { show: false, isCorrect: false, msg: '' };
+        STATE.shakeStage = false;
+      }
+
+      function getGame() {
+        return STATE.hero ? getGameData(STATE.hero) : [];
+      }
+
+      function getStage() {
+        return getGame()[STATE.currentStage] || null;
+      }
+
+      function saveState() {
+        const data = {
+          hero: STATE.hero,
+          currentStage: STATE.currentStage,
+          unlockedStages: STATE.unlockedStages,
+          gameCompleted: STATE.gameCompleted
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const data = JSON.parse(raw);
+          if (data && data.hero) {
+            STATE.hero = data.hero;
+            STATE.currentStage = Number.isInteger(data.currentStage) ? data.currentStage : 0;
+            STATE.unlockedStages = Array.isArray(data.unlockedStages) && data.unlockedStages.length ? data.unlockedStages : [0];
+            STATE.gameCompleted = !!data.gameCompleted;
+          }
+        } catch (err) {
+          console.warn('Impossible de charger la sauvegarde.', err);
+        }
+      }
+
+      function setZoneTheme(zone) {
+        const root = document.documentElement;
+        const themes = {
+          1: { bg: 'linear-gradient(180deg, #eff9f1 0%, #e2f4e8 100%)', primary: '#1f8a57', primary2: '#156c45', text: '#173c2a', accent: '#ffd166' },
+          2: { bg: 'linear-gradient(180deg, #eff3f7 0%, #e5ebf2 100%)', primary: '#4b5d72', primary2: '#334559', text: '#22313e', accent: '#f4c95d' },
+          3: { bg: 'linear-gradient(180deg, #fff7df 0%, #fff1cc 100%)', primary: '#d28a11', primary2: '#b06f00', text: '#523908', accent: '#ffdd72' }
+        };
+        const theme = themes[zone] || themes[1];
+        root.style.setProperty('--primary', theme.primary);
+        root.style.setProperty('--primary-2', theme.primary2);
+        root.style.setProperty('--text', theme.text);
+        root.style.setProperty('--accent', theme.accent);
+        document.body.style.background = 'radial-gradient(circle at top left, rgba(255,255,255,0.55), transparent 32%), ' + theme.bg;
+      }
+
+      function triggerShake() {
+        STATE.shakeStage = true;
+        render();
+        setTimeout(function () {
+          STATE.shakeStage = false;
+          render();
+        }, 450);
+      }
+
+      function handleSuccess() {
+        STATE.feedback = { show: true, isCorrect: true, msg: "Excellent ! C'est la bonne réponse !" };
+        const nextIndex = STATE.currentStage + 1;
+        if (nextIndex < getGame().length && !STATE.unlockedStages.includes(nextIndex)) {
+          STATE.unlockedStages = STATE.unlockedStages.concat(nextIndex);
+        }
+        saveState();
+        render();
+      }
+
+      function handleFail(msg) {
+        STATE.feedback = { show: true, isCorrect: false, msg: msg };
+        render();
+        triggerShake();
+      }
+
+      function handleNextStage() {
+        if (STATE.currentStage < getGame().length - 1) {
+          STATE.currentStage += 1;
+          resetInteractionState();
+        } else {
+          STATE.gameCompleted = true;
+        }
+        saveState();
+        render();
+      }
+
+      function startGame(hero) {
+        STATE.hero = hero;
+        STATE.currentStage = 0;
+        STATE.unlockedStages = [0];
+        STATE.gameCompleted = false;
+        resetInteractionState();
+        saveState();
+        render();
+      }
+
+      function restartGame() {
+        STATE.currentStage = 0;
+        STATE.unlockedStages = [0];
+        STATE.gameCompleted = false;
+        resetInteractionState();
+        saveState();
+        render();
+      }
+
+      function clearSaveAndHome() {
+        localStorage.removeItem(STORAGE_KEY);
+        STATE.hero = null;
+        STATE.currentStage = 0;
+        STATE.unlockedStages = [0];
+        STATE.gameCompleted = false;
+        resetInteractionState();
+        render();
+      }
+
+      function jumpToStage(index) {
+        if (!STATE.unlockedStages.includes(index)) return;
+        STATE.currentStage = index;
+        resetInteractionState();
+        saveState();
+        render();
+      }
+
+      function showReminder() {
+        alert(
+          'Rappel rapide :\n\n' +
+          '• Ajouter un nombre négatif revient à avancer vers les nombres plus petits.\n' +
+          '• Soustraire un nombre revient à ajouter son opposé.\n' +
+          '• Lis bien l\'histoire : elle donne l\'ordre des opérations.'
+        );
+      }
+
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+        } else {
+          document.exitFullscreen && document.exitFullscreen();
+        }
+      }
+
+      function submitInput(event) {
+        event.preventDefault();
+        const stage = getStage();
+        const val = parseInt(STATE.userAnswer, 10);
+        if (Number.isNaN(val)) {
+          handleFail('Hé ho ! Il faut entrer un vrai nombre !');
+          return;
+        }
+        if (val === stage.correctAnswer) handleSuccess();
+        else handleFail(stage.funnyFailMsg);
+      }
+
+      function submitExpression() {
+        const stage = getStage();
+        const exprStr = STATE.builtExpression.join('');
+        if (stage.expectedExpressions.includes(exprStr)) handleSuccess();
+        else handleFail(stage.funnyFailMsg);
+      }
+
+      function handleQcmClick(index) {
+        const stage = getStage();
+        if (STATE.feedback.isCorrect) return;
+        const option = stage.options[index];
+        if (option.isCorrect) handleSuccess();
+        else handleFail(option.msg);
+      }
+
+      function handleClickableClick(index) {
+        const stage = getStage();
+        if (STATE.feedback.isCorrect) return;
+        const item = stage.items[index];
+        if (item.isCorrect) handleSuccess();
+        else handleFail(item.failMsg);
+      }
+
+      function handleMatchSelect(side, idx) {
+        const stage = getStage();
+        if (STATE.feedback.isCorrect) return;
+        if (side === 'left') {
+          if (!STATE.matchedPairs.some(function (p) { return p.left === idx; })) {
+            STATE.matchLeft = idx;
+            render();
+          }
+          return;
+        }
+        if (side === 'right' && STATE.matchLeft !== null) {
+          if (STATE.matchedPairs.some(function (p) { return p.right === idx; })) return;
+          if (STATE.matchLeft === idx) {
+            STATE.matchedPairs = STATE.matchedPairs.concat({ left: STATE.matchLeft, right: idx });
+            STATE.matchLeft = null;
+            if (STATE.matchedPairs.length === stage.pairs.length) handleSuccess();
+            else render();
+          } else {
+            STATE.matchLeft = null;
+            handleFail("Ces deux éléments ne vont pas ensemble ! Les cordes s'emmêlent.");
+          }
+        }
+      }
+
+      function handleOrderClick(id) {
+        const stage = getStage();
+        if (STATE.feedback.isCorrect) return;
+        const item = stage.items.find(function (it) { return it.id === id; });
+        if (!item) return;
+        if (STATE.orderedItems.some(function (it) { return it.id === id; })) return;
+        STATE.orderedItems = STATE.orderedItems.concat(item);
+        const isDescending = stage.sortDirection === 'desc';
+        const sortedItems = stage.items.slice().sort(function (a, b) {
+          return isDescending ? b.value - a.value : a.value - b.value;
+        });
+        const isSequenceCorrect = STATE.orderedItems.every(function (ordered, index) {
+          return ordered.id === sortedItems[index].id;
+        });
+        if (!isSequenceCorrect) {
+          STATE.orderedItems = [];
+          handleFail('Mauvais ordre ! La séquence est brisée, tu dois recommencer.');
+          return;
+        }
+        if (STATE.orderedItems.length === stage.items.length) {
+          handleSuccess();
+        } else {
+          render();
+        }
+      }
+
+      function addToken(token) {
+        if (STATE.feedback.isCorrect) return;
+        STATE.builtExpression = STATE.builtExpression.concat(token);
+        render();
+      }
+
+      function clearTokens() {
+        STATE.builtExpression = [];
+        render();
+      }
+
+      function ambientSymbols(zone) {
+        const byZone = {
+          1: ['🍃', '🦜', '🌺', '✨'],
+          2: ['💎', '🪨', '🕯️', '✨'],
+          3: ['☀️', '🪙', '🏺', '✨']
+        };
+        const arr = byZone[zone] || ['✨', '🧭', '⭐', '🗺️'];
+        return `
+          <div class="floating-symbols" aria-hidden="true">
+            <span class="ambient-one">${arr[0]}</span>
+            <span class="ambient-two">${arr[1]}</span>
+            <span class="ambient-three">${arr[2]}</span>
+            <span class="ambient-four">${arr[3]}</span>
+          </div>`;
+      }
+
+      function sceneSvg(zone) {
+        if (zone === 1) {
+          return `
+            <svg viewBox="0 0 800 260" aria-hidden="true">
+              <defs>
+                <linearGradient id="jungleSky" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#c6f6d7"></stop>
+                  <stop offset="100%" stop-color="#58c482"></stop>
+                </linearGradient>
+              </defs>
+              <rect width="800" height="260" fill="url(#jungleSky)"></rect>
+              <circle cx="682" cy="54" r="28" fill="#fde68a"></circle>
+              <path d="M0 172 Q 140 110 290 150 T 800 162 V260 H0 Z" fill="#166534"></path>
+              <path d="M0 206 Q 200 160 410 190 T 800 176 V260 H0 Z" fill="#15803d"></path>
+              <path d="M0 228 C 160 200, 274 198, 392 212 S 620 240, 800 220 L800 260 L0 260 Z" fill="#855221" opacity="0.85"></path>
+              <path class="scene-sway" d="M64 28 C 42 110, 46 168, 72 250" stroke="#14532d" stroke-width="10" stroke-linecap="round" fill="none"></path>
+              <path class="scene-sway" d="M734 18 C 701 88, 698 170, 721 252" stroke="#14532d" stroke-width="10" stroke-linecap="round" fill="none"></path>
+              <g class="scene-sway">
+                <path d="M105 118 C 136 118, 146 144, 120 162 C 98 175, 84 148, 105 118 Z" fill="#22c55e"></path>
+                <path d="M94 145 C 126 145, 138 174, 110 192 C 85 205, 74 175, 94 145 Z" fill="#16a34a"></path>
+              </g>
+              <g class="scene-sway">
+                <path d="M690 102 C 722 102, 735 128, 708 150 C 682 164, 668 132, 690 102 Z" fill="#22c55e"></path>
+                <path d="M675 130 C 710 130, 722 158, 690 179 C 662 197, 650 163, 675 130 Z" fill="#16a34a"></path>
+              </g>
+              <path d="M266 222 Q 370 184 514 206" stroke="#fef3c7" stroke-width="10" fill="none" stroke-linecap="round" opacity="0.75"></path>
+              <circle class="scene-glow" cx="222" cy="84" r="5" fill="#fef08a"></circle>
+              <circle class="scene-glow" cx="308" cy="58" r="4" fill="#fde047"></circle>
+              <circle class="scene-glow" cx="590" cy="74" r="5" fill="#fef08a"></circle>
+              <circle class="scene-glow" cx="520" cy="116" r="4" fill="#fde047"></circle>
+            </svg>`;
+        }
+        if (zone === 2) {
+          return `
+            <svg viewBox="0 0 800 260" aria-hidden="true">
+              <defs>
+                <linearGradient id="caveBg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#334155"></stop>
+                  <stop offset="100%" stop-color="#111827"></stop>
+                </linearGradient>
+              </defs>
+              <rect width="800" height="260" fill="url(#caveBg)"></rect>
+              <path d="M0 0 L58 60 L110 0 L165 72 L235 0 L300 68 L375 0 L445 82 L520 0 L598 58 L665 0 L738 76 L800 0 V260 H0 Z" fill="#374151"></path>
+              <ellipse cx="400" cy="254" rx="430" ry="56" fill="#1f2937"></ellipse>
+              <polygon class="scene-glow" points="135,200 164,126 194,200" fill="#67e8f9" opacity="0.75"></polygon>
+              <polygon class="scene-glow" points="640,205 668,132 700,205" fill="#a78bfa" opacity="0.8"></polygon>
+              <polygon class="scene-glow" points="420,215 445,150 470,215" fill="#93c5fd" opacity="0.72"></polygon>
+              <rect x="86" y="116" width="12" height="88" rx="6" fill="#92400e"></rect>
+              <path class="scene-rise" d="M92 96 C 70 120, 76 150, 92 162 C 108 150, 115 120, 92 96 Z" fill="#fb923c"></path>
+              <rect x="704" y="126" width="12" height="78" rx="6" fill="#92400e"></rect>
+              <path class="scene-rise" d="M710 108 C 690 130, 694 155, 710 166 C 728 156, 732 128, 710 108 Z" fill="#f59e0b"></path>
+              <circle class="scene-twinkle" cx="320" cy="96" r="5" fill="#fef3c7"></circle>
+              <circle class="scene-twinkle" cx="350" cy="96" r="5" fill="#fef3c7"></circle>
+            </svg>`;
+        }
+        return `
+          <svg viewBox="0 0 800 260" aria-hidden="true">
+            <defs>
+              <linearGradient id="pyramidSky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#fee8a8"></stop>
+                <stop offset="100%" stop-color="#f5a623"></stop>
+              </linearGradient>
+            </defs>
+            <rect width="800" height="260" fill="url(#pyramidSky)"></rect>
+            <circle class="scene-glow" cx="145" cy="56" r="34" fill="#fff4c3"></circle>
+            <path d="M0 204 Q 180 165 360 196 T 800 188 V260 H0 Z" fill="#db8f18" opacity="0.85"></path>
+            <polygon points="400,58 570,218 230,218" fill="#b45309"></polygon>
+            <polygon points="400,58 520,218 400,218" fill="#92400e" opacity="0.72"></polygon>
+            <path d="M325 214 L400 136 L475 214" stroke="#fbbf24" stroke-width="8" fill="none" opacity="0.7"></path>
+            <rect x="362" y="182" width="76" height="34" rx="6" fill="#78350f"></rect>
+            <rect x="362" y="172" width="76" height="18" rx="6" fill="#fbbf24"></rect>
+            <circle class="scene-glow" cx="388" cy="171" r="8" fill="#fde047"></circle>
+            <circle class="scene-glow" cx="415" cy="163" r="7" fill="#fde047"></circle>
+            <circle class="scene-glow" cx="444" cy="170" r="8" fill="#fde047"></circle>
+            <path class="scene-rise" d="M250 115 Q 280 85 305 118" stroke="#fff7ed" stroke-width="5" fill="none" opacity="0.65"></path>
+            <path class="scene-rise" d="M525 108 Q 548 78 575 110" stroke="#fff7ed" stroke-width="5" fill="none" opacity="0.65"></path>
+          </svg>`;
+      }
+
+      function welcomeScreen() {
+        return `
+          <div class="welcome-wrap">
+            <div class="aurora one"></div>
+            <div class="aurora two"></div>
+            <div class="aurora three"></div>
+            <section class="welcome-card">
+              <div class="mini-badges">
+                <span class="mini-badge">Version améliorée</span>
+                <span class="mini-badge">Sans son</span>
+                <span class="mini-badge">100% autonome</span>
+              </div>
+              <h1 class="title">L'Aventure des Relatifs</h1>
+              <p class="subtitle">
+                Une aventure immersive pour réviser l'addition et la soustraction des nombres relatifs.<br>
+                20 épreuves • 3 zones mystérieuses • une progression sauvegardée automatiquement sur cet ordinateur.
+              </p>
+              <div class="badge-row">
+                <span class="badge">🌿 Jungle Mystique</span>
+                <span class="badge">🪨 Grottes Sombres</span>
+                <span class="badge">🏺 Pyramide Maya</span>
+              </div>
+              <div class="avatars">
+                <button class="choice-card orc" data-action="start-boy">
+                  ${orcAvatar('avatar-large')}
+                  <h2 class="choice-title">L'Orque explorateur</h2>
+                  <p class="choice-desc">Courageux, robuste et toujours prêt à affronter les calculs piégés de la jungle.</p>
+                </button>
+                <button class="choice-card girl" data-action="start-girl">
+                  ${girlAvatar('avatar-large')}
+                  <h2 class="choice-title">L'Exploratrice des nombres</h2>
+                  <p class="choice-desc">Rapide, observatrice et brillante pour percer les énigmes des grottes et de la pyramide.</p>
+                </button>
+              </div>
+            </section>
+          </div>`;
+      }
+
+      function mapNodeClass(index) {
+        const isUnlocked = STATE.unlockedStages.includes(index);
+        const isCurrent = index === STATE.currentStage;
+        const isDone = STATE.unlockedStages.includes(index + 1) || (index === 19 && STATE.gameCompleted);
+        const classes = ['map-node'];
+        if (!isUnlocked) classes.push('locked');
+        else if (isCurrent) classes.push('current');
+        else if (isDone) classes.push('done');
+        else classes.push('unlocked');
+        return classes.join(' ');
+      }
+
+      function renderMap(game) {
+        const progressPct = Math.round((STATE.unlockedStages.length / game.length) * 100);
+        return `
+          <section class="map-card">
+            <div class="map-head">
+              <div>
+                <h2 class="map-title">Carte de l'expédition</h2>
+                <div class="map-sub">${STATE.unlockedStages.length} étape(s) débloquée(s) sur ${game.length}</div>
+              </div>
+              <div class="pill secondary">📍 Étape ${STATE.currentStage + 1} / ${game.length}</div>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:${progressPct}%"></div></div>
+            <div class="map-grid">
+              ${game.map(function (stage, index) {
+                const symbol = (STATE.unlockedStages.includes(index + 1) || (index === 19 && STATE.gameCompleted)) && index !== STATE.currentStage ? '✓' : stage.id;
+                return `<button class="${mapNodeClass(index)}" title="${stage.title}" ${STATE.unlockedStages.includes(index) ? `data-stage-jump="${index}"` : 'disabled'}>${symbol}</button>`;
+              }).join('')}
+            </div>
+          </section>`;
+      }
+
+      function topbar(stage) {
+        const heroName = STATE.hero === 'girl' ? "L'Exploratrice des Relatifs" : "L'Explorateur des Relatifs";
+        const avatar = STATE.hero === 'girl' ? girlAvatar('avatar-mini') : orcAvatar('avatar-mini');
+        return `
+          <header class="hero-board topbar">
+            <div class="topbar-left">
+              <div>${avatar}</div>
+              <div>
+                <h1>${heroName}</h1>
+                <p>Révision 4ème — Addition et soustraction des nombres relatifs</p>
+              </div>
+            </div>
+            <div class="topbar-right">
+              <span class="pill" style="background: var(--primary);">${stage.zoneName || ('Zone ' + stage.zone)}</span>
+              <span class="pill secondary">🏁 ${STATE.unlockedStages.length}/20</span>
+            </div>
+          </header>`;
+      }
+
+      function stageScene(stage) {
+        return `
+          <section class="scene-card">
+            <div class="scene-frame">
+              ${sceneSvg(stage.zone)}
+              <div class="scene-label">Ambiance de la zone ${stage.zone}</div>
+              <div class="scene-stage-tag">
+                <div class="emoji">${stage.icon}</div>
+                <div>
+                  <div class="small">Épreuve en cours</div>
+                  <div class="name">${stage.title}</div>
+                </div>
+              </div>
+            </div>
+          </section>`;
+      }
+
+      function inputSection(stage) {
+        return `
+          <form class="input-form" id="input-form">
+            <input class="answer-input" id="answer-input" type="number" placeholder="Ta réponse..." value="${STATE.userAnswer}">
+            <button class="btn btn-primary" type="submit">Vérifier</button>
+          </form>`;
+      }
+
+      function expressionBuilderSection(stage) {
+        return `
+          <div>
+            <div class="token-board">
+              ${STATE.builtExpression.length ? STATE.builtExpression.map(function (token) {
+                return `<span class="chip">${escapeHtml(token)}</span>`;
+              }).join('') : '<span class="token-placeholder">Ton expression apparaîtra ici...</span>'}
+            </div>
+            <div class="token-row">
+              ${stage.tokens.map(function (token, index) {
+                return `<button type="button" class="btn btn-secondary" data-token-index="${index}">${escapeHtml(token)}</button>`;
+              }).join('')}
+            </div>
+            <div class="toolbar" style="justify-content:center; margin-top:16px;">
+              <button type="button" class="btn btn-danger" data-action="clear-tokens">Effacer</button>
+              <button type="button" class="btn btn-primary" data-action="validate-expression">Valider</button>
+            </div>
+          </div>`;
+      }
+
+      function qcmSection(stage) {
+        return `
+          <div class="option-grid">
+            ${stage.options.map(function (opt, index) {
+              const classes = ['option-btn'];
+              if (STATE.feedback.isCorrect && opt.isCorrect) classes.push('correct-highlight');
+              return `<button type="button" class="${classes.join(' ')}" data-qcm-index="${index}">${escapeHtml(opt.text)}</button>`;
+            }).join('')}
+          </div>`;
+      }
+
+      function clickableSection(stage) {
+        return `
+          <div class="click-grid">
+            ${stage.items.map(function (item, index) {
+              const classes = ['click-card'];
+              if (STATE.feedback.isCorrect && item.isCorrect) classes.push('correct-highlight');
+              return `
+                <button type="button" class="${classes.join(' ')}" data-click-index="${index}">
+                  <div class="emoji">${stage.icon}</div>
+                  <div>${escapeHtml(item.text)}</div>
+                </button>`;
+            }).join('')}
+          </div>`;
+      }
+
+      function matchingSection(stage) {
+        const rightOrder = stage.pairs.map(function (_, index) { return index; }).reverse();
+        return `
+          <div class="matching-wrap">
+            <div class="match-column">
+              <h4>Calculs</h4>
+              <div class="match-list">
+                ${stage.pairs.map(function (pair, index) {
+                  const isMatched = STATE.matchedPairs.some(function (p) { return p.left === index; });
+                  const isSelected = STATE.matchLeft === index;
+                  const classes = ['match-btn'];
+                  if (isMatched) classes.push('matched');
+                  else if (isSelected) classes.push('selected');
+                  return `<button type="button" class="${classes.join(' ')}" data-match-left="${index}" ${isMatched ? 'disabled' : ''}>${escapeHtml(pair.left)}</button>`;
+                }).join('')}
+              </div>
+            </div>
+            <div class="match-connector" aria-hidden="true"><span>🔗</span><span>🔗</span><span>🔗</span></div>
+            <div class="match-column">
+              <h4>Résultats</h4>
+              <div class="match-list">
+                ${rightOrder.map(function (realIndex) {
+                  const pair = stage.pairs[realIndex];
+                  const isMatched = STATE.matchedPairs.some(function (p) { return p.right === realIndex; });
+                  const classes = ['match-btn'];
+                  if (isMatched) classes.push('matched');
+                  return `<button type="button" class="${classes.join(' ')}" data-match-right="${realIndex}" ${isMatched ? 'disabled' : ''}>${escapeHtml(pair.right)}</button>`;
+                }).join('')}
+              </div>
+            </div>
+          </div>`;
+      }
+
+      function orderingSection(stage) {
+        return `
+          <div>
+            <div class="order-grid">
+              ${stage.items.map(function (item) {
+                const clickIndex = STATE.orderedItems.findIndex(function (ordered) { return ordered.id === item.id; });
+                const isClicked = clickIndex !== -1;
+                return `
+                  <button type="button" class="order-btn ${isClicked ? 'clicked' : ''}" data-order-id="${item.id}" ${isClicked ? 'disabled' : ''}>
+                    ${isClicked ? `<span class="order-index">${clickIndex + 1}</span>` : ''}
+                    <div class="emoji">${stage.icon}</div>
+                    <div>${escapeHtml(item.text)}</div>
+                  </button>`;
+              }).join('')}
+            </div>
+            <div class="sequence-line">
+              ${STATE.orderedItems.map(function (item, index) {
+                return `<span class="chip">${escapeHtml(item.text)}</span>${index < STATE.orderedItems.length - 1 ? '<span>➜</span>' : ''}`;
+              }).join('')}
+            </div>
+          </div>`;
+      }
+
+      function questionSection(stage) {
+        const showExpression = stage.type === 'input' && !stage.question.includes(stage.expression);
+        let exercise = '';
+        if (stage.type === 'input') exercise = inputSection(stage);
+        else if (stage.type === 'expression_builder') exercise = expressionBuilderSection(stage);
+        else if (stage.type === 'qcm') exercise = qcmSection(stage);
+        else if (stage.type === 'clickable') exercise = clickableSection(stage);
+        else if (stage.type === 'matching') exercise = matchingSection(stage);
+        else if (stage.type === 'ordering') exercise = orderingSection(stage);
+
+        return `
+          <section class="question-box">
+            <h3>${escapeHtml(stage.question)}</h3>
+            ${showExpression ? `<div class="expression-display">${escapeHtml(stage.expression)} = ?</div>` : ''}
+          </section>
+          ${exercise}`;
+      }
+
+      function feedbackSection() {
+        if (!STATE.feedback.show) return '';
+        const success = STATE.feedback.isCorrect;
+        return `
+          <section class="feedback-card ${success ? 'success' : 'fail'}">
+            <div class="feedback-main">
+              <div class="feedback-emoji">${success ? '🌟' : '🙈'}</div>
+              <div>
+                <h4 class="feedback-title">${success ? 'Superbe !' : 'Zut...'}</h4>
+                <p>${escapeHtml(STATE.feedback.msg)}</p>
+              </div>
+            </div>
+            ${success ? '<button class="btn btn-primary" data-action="next-stage">Continuer ➜</button>' : ''}
+          </section>`;
+      }
+
+      function stageScreen() {
+        const game = getGame();
+        const stage = getStage();
+        setZoneTheme(stage.zone);
+        return `
+          <div class="screen">
+            <div class="aurora one"></div>
+            <div class="aurora two"></div>
+            <div class="aurora three"></div>
+            ${ambientSymbols(stage.zone)}
+            <div class="shell">
+              ${topbar(stage)}
+              <div class="toolbar">
+                <button class="btn btn-secondary" data-action="show-reminder">📘 Rappel</button>
+                <button class="btn btn-secondary" data-action="toggle-fullscreen">🖥️ Plein écran</button>
+                <button class="btn btn-danger" data-action="reset-home">↩ Revenir à l'accueil</button>
+              </div>
+              ${renderMap(game)}
+              <section class="stage-card ${STATE.shakeStage ? 'shake' : ''}">
+                <div class="stage-header" style="background: linear-gradient(135deg, var(--primary), var(--primary-2));">
+                  <div class="stage-title-group">
+                    <div class="stage-icon-bubble">${stage.icon}</div>
+                    <div>
+                      <div class="stage-meta">Étape ${stage.id}</div>
+                      <h2>${escapeHtml(stage.title)}</h2>
+                    </div>
+                  </div>
+                  <div class="stage-meta">Zone ${stage.zone}</div>
+                </div>
+                <div class="stage-inner">
+                  <div class="story-card"><p>“${escapeHtml(stage.story)}”</p></div>
+                  ${stageScene(stage)}
+                  ${questionSection(stage)}
+                  ${feedbackSection()}
+                </div>
+              </section>
+            </div>
+          </div>`;
+      }
+
+      function victoryScreen() {
+        setZoneTheme(3);
+        const explorer = STATE.hero === 'girl' ? 'exploratrice' : 'explorateur';
+        return `
+          <div class="victory">
+            <div class="aurora one"></div>
+            <div class="aurora two"></div>
+            <div class="aurora three"></div>
+            <section class="victory-card">
+              <div class="victory-crown">🏆</div>
+              <h2>Victoire !</h2>
+              <p>
+                Félicitations, courageux ${explorer} ! Tu as traversé la jungle, vaincu les grottes et percé les secrets de la pyramide maya.
+                Les nombres relatifs n'ont désormais plus aucun secret pour toi.
+              </p>
+              <div class="treasure-row"><span>👑</span><span>🪙</span><span>💎</span><span>📜</span></div>
+              <div class="certificate">
+                <h3>Certificat d'aventurier des relatifs</h3>
+                <p>
+                  Cette version est entièrement autonome : aucun son, aucune connexion internet nécessaire,<br>
+                  et une sauvegarde locale pour reprendre la progression là où elle a été laissée.
+                </p>
+                <p><strong>Mission accomplie :</strong> 20 épreuves réussies.</p>
+              </div>
+              <div class="toolbar" style="justify-content:center; margin-top:26px;">
+                <button class="btn btn-primary" data-action="restart-game">Rejouer l'aventure</button>
+                <button class="btn btn-secondary" data-action="toggle-fullscreen">Plein écran</button>
+                <button class="btn btn-danger" data-action="reset-home">Changer d'avatar</button>
+              </div>
+            </section>
+          </div>`;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function render() {
+        const app = document.getElementById('app');
+        if (!STATE.hero) {
+          document.body.style.background = 'radial-gradient(circle at top left, rgba(255,255,255,0.55), transparent 32%), linear-gradient(180deg, #eef5f2 0%, #e7f0ec 100%)';
+          app.innerHTML = welcomeScreen();
+          bindEvents();
+          return;
+        }
+        if (STATE.gameCompleted) {
+          app.innerHTML = victoryScreen();
+          bindEvents();
+          return;
+        }
+        app.innerHTML = stageScreen();
+        bindEvents();
+        const answerInput = document.getElementById('answer-input');
+        if (answerInput) answerInput.focus();
+      }
+
+      function bindEvents() {
+        document.querySelectorAll('[data-action="start-boy"]').forEach(function (el) {
+          el.onclick = function () { startGame('boy'); };
+        });
+        document.querySelectorAll('[data-action="start-girl"]').forEach(function (el) {
+          el.onclick = function () { startGame('girl'); };
+        });
+        document.querySelectorAll('[data-action="next-stage"]').forEach(function (el) {
+          el.onclick = handleNextStage;
+        });
+        document.querySelectorAll('[data-action="restart-game"]').forEach(function (el) {
+          el.onclick = restartGame;
+        });
+        document.querySelectorAll('[data-action="reset-home"]').forEach(function (el) {
+          el.onclick = clearSaveAndHome;
+        });
+        document.querySelectorAll('[data-action="show-reminder"]').forEach(function (el) {
+          el.onclick = showReminder;
+        });
+        document.querySelectorAll('[data-action="toggle-fullscreen"]').forEach(function (el) {
+          el.onclick = toggleFullscreen;
+        });
+        document.querySelectorAll('[data-action="clear-tokens"]').forEach(function (el) {
+          el.onclick = clearTokens;
+        });
+        document.querySelectorAll('[data-action="validate-expression"]').forEach(function (el) {
+          el.onclick = submitExpression;
+        });
+        document.querySelectorAll('[data-stage-jump]').forEach(function (el) {
+          el.onclick = function () { jumpToStage(parseInt(el.getAttribute('data-stage-jump'), 10)); };
+        });
+        document.querySelectorAll('[data-token-index]').forEach(function (el) {
+          el.onclick = function () {
+            const stage = getStage();
+            addToken(stage.tokens[parseInt(el.getAttribute('data-token-index'), 10)]);
+          };
+        });
+        document.querySelectorAll('[data-qcm-index]').forEach(function (el) {
+          el.onclick = function () { handleQcmClick(parseInt(el.getAttribute('data-qcm-index'), 10)); };
+        });
+        document.querySelectorAll('[data-click-index]').forEach(function (el) {
+          el.onclick = function () { handleClickableClick(parseInt(el.getAttribute('data-click-index'), 10)); };
+        });
+        document.querySelectorAll('[data-match-left]').forEach(function (el) {
+          el.onclick = function () { handleMatchSelect('left', parseInt(el.getAttribute('data-match-left'), 10)); };
+        });
+        document.querySelectorAll('[data-match-right]').forEach(function (el) {
+          el.onclick = function () { handleMatchSelect('right', parseInt(el.getAttribute('data-match-right'), 10)); };
+        });
+        document.querySelectorAll('[data-order-id]').forEach(function (el) {
+          el.onclick = function () { handleOrderClick(el.getAttribute('data-order-id')); };
+        });
+        const input = document.getElementById('answer-input');
+        if (input) {
+          input.oninput = function () { STATE.userAnswer = input.value; };
+          input.onkeydown = function (ev) {
+            if (ev.key === 'Enter') {
+              submitInput(ev);
+            }
+          };
+        }
+        const form = document.getElementById('input-form');
+        if (form) form.onsubmit = submitInput;
+      }
+
+      loadState();
+      render();
+    })();
+  </script>
+</body>
+</html>
